@@ -3,7 +3,7 @@ from rexpro.messages import ErrorResponse
 
 from contextlib import contextmanager
 from hashlib import md5
-from Queue import Queue
+from rexpro._compat import queue
 import struct
 from socket import socket
 from textwrap import dedent
@@ -11,6 +11,8 @@ from textwrap import dedent
 from rexpro import exceptions
 from rexpro import messages
 from rexpro import utils
+import warnings
+
 
 class RexProSocket(socket):
     """ Subclass of python's socket that sends and received rexpro messages """
@@ -28,25 +30,51 @@ class RexProSocket(socket):
         """
         gets the message type and message from rexster
 
+
+        Basic Message Structure:  reference: https://github.com/tinkerpop/rexster/wiki/RexPro-Messages
+            segment             | type (bytes)  | description
+            protocol version    | byte (1)      | Version of RexPro, should be 1
+            serializer type     | byte (1)      | Type of Serializer: msgpack==0, json==1
+            reserved for future | byte (4)      | Reserved for future use.
+            message type        | byte (1)      | Tye type of message as described in the value columns.
+            message size        | int (4)       | The length of the message body
+            message body        | byte (n)      | The body of the message itself. The Good, Bad and Ugly.
+
+
+        Message Types
+            message type  | type     | value | description
+            session       | request  | 1     | A request to open or close the session with the RexPro Server
+            session       | response | 2     | RexPro server response to session request
+            script        | request  | 3     | A request to process a gremlin script
+            script        | response | 5     | A response to a script request
+            error         | response | 0     | A RexPro server error response
+
         :returns: RexProMessage
         """
         msg_version = self.recv(1)
-        if not msg_version:
+        if not msg_version:  # pragma: no cover
+            # Can only be tested against a known broken version - none known yet.
             raise exceptions.RexProConnectionException('socket connection has been closed')
-        if bytearray([msg_version])[0] != 1:
-            raise exceptions.RexProConnectionException('unsupported protocol version: {}'.format())
+        if bytearray([msg_version])[0] != 1:  # pragma: no cover
+            # Can only be tested against a known broken version - none known yet.
+            raise exceptions.RexProConnectionException('unsupported protocol version: {}'.format(msg_version))
 
         serializer_type = self.recv(1)
-        if bytearray(serializer_type)[0] != 0:
-            raise exceptions.RexProConnectionException('unsupported serializer version: {}'.format())
+        if bytearray(serializer_type)[0] != 0:  # pragma: no cover
+            # Can only be tested against a known broken version - none known yet.
+            raise exceptions.RexProConnectionException('unsupported serializer version: {}'.format(serializer_type))
 
-        #get padding
+        # get padding
         self.recv(4)
 
         msg_type = self.recv(1)
         msg_type = bytearray(msg_type)[0]
 
         msg_len = struct.unpack('!I', self.recv(4))[0]
+
+        if msg_len == 0:  # pragma: no cover
+            # This shouldn't happen unless there is a server-side problem
+            raise exceptions.RexProScriptException("Insufficient data received")
 
         response = ''
         while len(response) < msg_len:
@@ -60,9 +88,11 @@ class RexProSocket(socket):
             MessageTypes.SCRIPT_RESPONSE: messages.MsgPackScriptResponse
         }
 
-        if msg_type not in type_map:
+        if msg_type not in type_map:  # pragma: no cover
+            # this shouldn't happen unless there is an unknown rexpro version change
             raise exceptions.RexProConnectionException("can't deserialize message type {}".format(msg_type))
         return type_map[msg_type].deserialize(response)
+
 
 class RexProConnectionPool(object):
 
@@ -82,7 +112,7 @@ class RexProConnectionPool(object):
         self.port = port
         self.size = size
 
-        self.pool = Queue()
+        self.pool = queue.Queue()
         for i in range(size):
             self.pool.put(self._new_conn())
 
@@ -128,7 +158,7 @@ class RexProConnectionPool(object):
 
 class RexProConnection(object):
 
-    def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password=''):
+    def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None):
         """
         Connection constructor
 
@@ -148,17 +178,22 @@ class RexProConnection(object):
         self.graph_name = graph_name
         self.username = username
         self.password = password
+        self.timeout = timeout
 
         self.graph_features = None
 
-        #connect to server
+        # connect to server
         self._conn = RexProSocket()
-        self._conn.connect((self.host, self.port))
+        self._conn.settimeout(self.timeout)
+        try:
+            self._conn.connect((self.host, self.port))
+        except Exception as e:
+            raise RexProConnectionException("Could not connect to database: %s" % e)
 
-        #indicates that we're in a transaction
+        # indicates that we're in a transaction
         self._in_transaction = False
 
-        #stores the session key
+        # stores the session key
         self._session_key = None
         self._open_session()
 
@@ -230,7 +265,7 @@ class RexProConnection(object):
         executes the given gremlin script with the provided parameters
 
         :param script: the gremlin script to isolate
-        :type script: string
+        :type script: str
         :param params: the parameters to execute the script with
         :type params: dictionary
         :param isolate: wraps the script in a closure so any variables set aren't persisted for the next execute call

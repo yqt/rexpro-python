@@ -27,6 +27,10 @@ setup(
     ],
     keywords='rexster,tinkerpop,rexpro',
     install_requires=['msgpack-python'],
+    extra_requires={
+        'develop': ['nose==1.3.0', 'coverage==3.7.1', 'tox==1.7.1'],
+    },
+    scripts=['run_coverage.sh'],
     author='Blake Eggleston',
     author_email='bdeggleston@gmail.com',
     url='https://github.com/bdeggleston/rexpro-python',

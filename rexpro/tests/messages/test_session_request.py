@@ -1,7 +1,10 @@
 __author__ = 'bdeggleston'
 
 from rexpro.tests.base import BaseRexProTestCase
+from nose.plugins.attrib import attr
 
+
+@attr('unit')
 class TestRexProSessionRequest(BaseRexProTestCase):
 
     def test_creating_session_works_properly(self):

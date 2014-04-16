@@ -14,6 +14,7 @@ def int_to_32bit_array(val):
         value >>= 8
     return str(bytes)
 
+
 def int_from_32bit_array(val):
     """
     Converts an integer from a 32 bit bytearray
@@ -25,4 +26,3 @@ def int_from_32bit_array(val):
         rval <<= 8
         rval |= fragment
     return rval
-

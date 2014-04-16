@@ -1,11 +1,16 @@
 __author__ = 'bdeggleston'
 
 from unittest import skip
+from nose.plugins.attrib import attr
+from mock import patch
 
 from rexpro.tests.base import BaseRexProTestCase, multi_graph
+from rexpro._compat import print_
 
 from rexpro import exceptions
 
+
+@attr('unit')
 class TestConnection(BaseRexProTestCase):
 
     def test_connection_success(self):
@@ -17,9 +22,32 @@ class TestConnection(BaseRexProTestCase):
         with self.assertRaises(exceptions.RexProConnectionException):
             self.get_connection(graphname='nothing')
 
-    @skip
     def test_invalid_connection_info_raises_exception(self):
-        pass
+        """ Attempting to connect with invalid information should raise and Exception """
+        with self.assertRaises(exceptions.RexProConnectionException):
+            self.get_connection(host='1.2.3.4', timeout=0.1)
+
+    def test_connection_close_prematurely(self):
+        """ Attempting to send/recieve with premature connection close """
+        conn = self.get_connection()
+        conn._conn.close()
+        with self.assertRaises(Exception):
+            conn._conn.get_response()
+
+    @skip
+    def test_invalid_msgpack(self):
+        """ Attempting to test invalid msgpack channel setup """
+        conn = self.get_connection()
+        with patch('rexpro.connection.socket') as mocket:
+            mocket.recv.return_value = '\x00'
+            # testing the msg_version
+            with self.assertRaises(exceptions.RexProConnectionException):
+                conn._conn.get_response()
+
+            #testing the serializer type
+            mocket.recv.return_value = '\x10'
+            with self.assertRaises(exceptions.RexProConnectionException):
+                conn._conn.get_response()
 
     @skip
     def test_call_close_transactions_without_an_open_transaction_fails(self):
@@ -30,6 +58,7 @@ class TestConnection(BaseRexProTestCase):
         pass
 
 
+@attr('unit')
 class TestQueries(BaseRexProTestCase):
 
     @multi_graph
@@ -41,32 +70,32 @@ class TestQueries(BaseRexProTestCase):
 
         e = lambda p: conn.execute(
             script='values',
-            params={'values':p}
+            params={'values': p}
         )
 
         #test string
         data = e('yea boyeeee')
-        assert data== 'yea boyeeee'
+        self.assertEqual(data, 'yea boyeeee')
 
         #test int
         data = e(1982)
-        assert data == 1982
+        self.assertEqual(data, 1982)
 
         #test float
         data = e(3.14)
-        assert data == 3.14
+        self.assertEqual(data, 3.14)
 
         #test dict
-        data = e({'blake':'eggleston'})
-        assert data == {'blake':'eggleston'}
+        data = e({'blake': 'eggleston'})
+        self.assertEqual(data, {'blake': 'eggleston'})
 
         #test none
         data = e(None)
-        assert data is None
+        self.assertIsNone(data)
 
         #test list
-        data = e([1,2])
-        assert data == (1,2)
+        data = e([1, 2])
+        self.assertEqual(data, [1, 2])
 
     def test_query_isolation(self):
         """ Test that variables defined in one query are not available in subsequent queries """
@@ -87,7 +116,6 @@ class TestQueries(BaseRexProTestCase):
                 """
             )
 
-
     def test_element_creation(self):
         """ Tests that vertices and edges can be created and are serialized properly """
 
@@ -101,13 +129,15 @@ class TestQueries(BaseRexProTestCase):
             """
         )
         v1, v2, e = elements
-        assert v1['_properties']['prop'] == 6
-        assert v2['_properties']['prop'] == 8
-        assert e['_properties']['prop'] == 10
+        self.assertEqual(v1['_properties']['prop'], 6)
+        self.assertEqual(v2['_properties']['prop'], 8)
+        self.assertEqual(e['_properties']['prop'], 10)
 
-        assert e['_outV'] == v1['_id']
-        assert e['_inV'] == v2['_id']
+        self.assertEqual(e['_outV'], v1['_id'])
+        self.assertEqual(e['_inV'], v2['_id'])
 
+
+@attr('unit')
 class TestTransactions(BaseRexProTestCase):
 
     def test_transaction_isolation(self):
@@ -115,37 +145,58 @@ class TestTransactions(BaseRexProTestCase):
         conn1 = self.get_connection()
         conn2 = self.get_connection()
 
-        if not conn1.graph_features['supportsTransactions']:
-            return
+        if conn1.graph_features['supportsTransactions']:
 
-        with conn1.transaction():
-            v1, v2, v3 = conn1.execute(
+            with conn1.transaction():
+                v1, v2, v3 = conn1.execute(
+                    """
+                    def v1 = g.addVertex([val:1, str:"vertex 1"])
+                    def v2 = g.addVertex([val:2, str:"vertex 2"])
+                    def v3 = g.addVertex([val:3, str:"vertex 3"])
+                    [v1, v2, v3]
+                    """
+                )
+
+            print_("{}, {}, {}".format(v1, v2, v3))
+
+            conn1.open_transaction()
+            conn2.open_transaction()
+
+            v1_1 = conn1.execute(
                 """
-                def v1 = g.addVertex([val:1, str:"vertex 1"])
-                def v2 = g.addVertex([val:2, str:"vertex 2"])
-                def v3 = g.addVertex([val:3, str:"vertex 3"])
-                [v1, v2, v3]
-                """
+                def v1 = g.v(eid)
+                v1.setProperty("str", "v1")
+                v1
+                """,
+                params={'eid': v1['_id']}
             )
 
-        conn1.open_transaction()
-        conn2.open_transaction()
+            v1_2 = conn2.execute(
+                """
+                g.v(eid)
+                """,
+                params={'eid': v1['_id']}
+            )
 
-        v1_1 = conn1.execute(
-            """
-            def v1 = g.v(eid)
-            v1.setProperty("str", "v1")
-            v1
-            """,
-            params={'eid':v1['_id']}
-        )
+            self.assertEqual(v1_2['_properties']['str'], 'vertex 1')
 
-        v1_2 = conn2.execute(
-            """
-            g.v(eid)
-            """,
-            params={'eid':v1['_id']}
-        )
+    def test_bad_multiple_transactions_one_connection(self):
+        """ Tests that the transaction manager prevents more than one simultaneous transaction on a single connection
+        """
 
-        assert v1_2['_properties']['str'] == 'vertex 1'
+        conn = self.get_connection()
 
+        if conn.graph_features['supportsTransactions']:
+            with conn.transaction():
+                with self.assertRaises(exceptions.RexProException):
+                    with conn.transaction():
+                        pass
+
+        conn.close()
+
+    def test_bad_close_transaction(self):
+        """ Tests that a transaction cannot be closed without at first having a transaction """
+        conn = self.get_connection()
+
+        with self.assertRaises(exceptions.RexProScriptException):
+            conn.close_transaction()

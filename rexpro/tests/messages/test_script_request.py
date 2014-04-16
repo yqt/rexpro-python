@@ -1,10 +1,11 @@
-from unittest import skip
-
 __author__ = 'bdeggleston'
 
+from nose.plugins.attrib import attr
 from rexpro.messages import ScriptRequest, MsgPackScriptResponse, ErrorResponse, SessionRequest, SessionResponse
 from rexpro.tests.base import BaseRexProTestCase, multi_graph
 
+
+@attr('unit')
 class TestRexProScriptRequestMessage(BaseRexProTestCase):
 
     @multi_graph
@@ -25,9 +26,9 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
         self.assertNotErrorResponse(response)
         self.assertIsInstance(response, MsgPackScriptResponse)
         self.assertIsInstance(response.results, dict)
-        assert '_properties' in response.results
-        assert 'xyz' in response.results['_properties']
-        assert response.results['_properties']['xyz'] == 5
+        self.assertIn('_properties', response.results)
+        self.assertIn('xyz', response.results['_properties'])
+        self.assertEqual(response.results['_properties']['xyz'], 5)
 
     @multi_graph
     def test_sessionless_message(self):
@@ -46,14 +47,14 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
         self.assertNotErrorResponse(response)
         self.assertIsInstance(response, MsgPackScriptResponse)
         self.assertIsInstance(response.results, dict)
-        assert '_properties' in response.results
-        assert 'xyz' in response.results['_properties']
-        assert response.results['_properties']['xyz'] == 5
+        self.assertIn('_properties', response.results)
+        self.assertIn('xyz', response.results['_properties'])
+        self.assertEqual(response.results['_properties']['xyz'], 5)
 
     def test_query_value_isolation(self):
         conn = self.get_socket()
 
-        session_msg = SessionRequest()
+        session_msg = SessionRequest(username=self.username, password=self.password)
         conn.send_message(session_msg)
         response = conn.get_response()
         self.assertIsInstance(response, SessionResponse)
@@ -85,11 +86,10 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
 
         self.assertErrorResponse(response)
 
-
     def test_disabled_query_isolation(self):
         conn = self.get_socket()
 
-        session_msg = SessionRequest()
+        session_msg = SessionRequest(username=self.username, password=self.password)
         conn.send_message(session_msg)
         response = conn.get_response()
         self.assertIsInstance(response, SessionResponse)

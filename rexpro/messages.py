@@ -9,6 +9,8 @@ import msgpack
 
 from rexpro import exceptions
 from rexpro import utils
+from rexpro._compat import string_types, integer_types, float_types, array_types
+
 
 class MessageTypes(object):
     """
@@ -38,13 +40,13 @@ class RexProMessage(object):
         Creates and returns the list containing the data to be serialized into a message
         """
         return [
-            #session
+            # session
             self.session,
 
-            #unique request id
+            # unique request id
             uuid1().bytes,
 
-            #meta
+            # meta
             self.get_meta()
         ]
 
@@ -61,32 +63,32 @@ class RexProMessage(object):
         the actual message is just a list of values, all seem to start with version, session, and a unique request id
         the session and unique request id are uuid bytes, and the version and are each 1 byte unsigned integers
         """
-        #msgpack list
+        # msgpack list
         msg = self.get_message_list()
         bytes = msgpack.dumps(msg)
 
-        #add protocol version
+        # add protocol version
         message = bytearray([1])
 
-        #add serializer type
+        # add serializer type
         message += bytearray([0])
 
-        #add padding
+        # add padding
         message += bytearray([0, 0, 0, 0])
 
-        #add message type
+        # add message type
         message += bytearray([self.MESSAGE_TYPE])
 
-        #add message length
+        # add message length
         message += struct.pack('!I', len(bytes))
 
-        #add message
+        # add message
         message += bytes
 
         return message
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data):  # pragma: no cover
         """
         Constructs a message instance from the given data
 
@@ -95,7 +97,7 @@ class RexProMessage(object):
 
         :rtype: RexProMessage
         """
-        #redefine in subclasses
+        # redefine in subclasses
         raise NotImplementedError
 
     @staticmethod
@@ -104,9 +106,10 @@ class RexProMessage(object):
         interprets the response from rexster, returning the relevant response message object
         """
 
+
 class ErrorResponse(RexProMessage):
 
-    #meta flags
+    # meta flags
     INVALID_MESSAGE_ERROR = 0
     INVALID_SESSION_ERROR = 1
     SCRIPT_FAILURE_ERROR = 2
@@ -126,6 +129,7 @@ class ErrorResponse(RexProMessage):
         session, request, meta, msg = message
         return cls(message=msg, meta=meta)
 
+
 class SessionRequest(RexProMessage):
     """
     Message for creating a session with rexster
@@ -133,7 +137,8 @@ class SessionRequest(RexProMessage):
 
     MESSAGE_TYPE = MessageTypes.SESSION_REQUEST
 
-    def __init__(self, graph_name=None, graph_obj_name=None, username='', password='', session_key=None, kill_session=False, **kwargs):
+    def __init__(self, graph_name=None, graph_obj_name=None, username='', password='', session_key=None,
+                 kill_session=False, *args, **kwargs):
         """
         :param graph_name: the name of the rexster graph to connect to
         :type graph_name: str
@@ -148,7 +153,7 @@ class SessionRequest(RexProMessage):
         :param kill_session: sets this request to kill the server session referenced by the session key parameter, defaults to False
         :type kill_session: bool
         """
-        super(SessionRequest, self).__init__(**kwargs)
+        super(SessionRequest, self).__init__(*args, **kwargs)
         self.username = username
         self.password = password
         self.session = session_key
@@ -160,7 +165,8 @@ class SessionRequest(RexProMessage):
         if self.kill_session:
             return {'killSession': True}
 
-        meta = {}
+        meta = super(SessionRequest, self).get_meta()
+
         if self.graph_name:
             meta['graphName'] = self.graph_name
             if self.graph_obj_name:
@@ -169,10 +175,30 @@ class SessionRequest(RexProMessage):
         return meta
 
     def get_message_list(self):
-        return super(SessionRequest, self).get_message_list() + [
+        """ Constructs a Session Request Message List
+
+        field     | type      | description
+        Session   | byte (16) | The UUID for the Session. Set each byte to zero for an "empty" session.
+        Request   | byte (16) | The UUID for the request. Uniquely identifies the request from the client.
+                  |           | Get's passed back and forth so the response can be mapped to a request.
+        Meta      | Map       | Message specific properties described below
+        Username  | String    | The username to access the RexPro Server assuming auth is turned on. Ignored if no auth.
+        Password  | String    | The password to access the RexPro Server assuming auth is turned on. Ignored if no auth.
+
+        Meta Attributes:
+        field        | type   | description
+        graphName    | String | The name of the graph to open a session on. Optional
+        graphObjName | String | The variable name of the Graph object, defaults to `g`. Optional
+        killSession  | Bool   | If true, the given session will be destroyed, else one will be created, default False
+        """
+
+        message_list = super(SessionRequest, self).get_message_list() + [
             self.username,
             self.password
         ]
+        if not self.session:
+            message_list[0] = '\x00'*16
+        return message_list
 
 
 class SessionResponse(RexProMessage):
@@ -194,6 +220,7 @@ class SessionResponse(RexProMessage):
             meta=meta,
             languages=languages
         )
+
 
 class ScriptRequest(RexProMessage):
     """
@@ -248,15 +275,15 @@ class ScriptRequest(RexProMessage):
             if self.graph_obj_name:
                 meta['graphObjName'] = self.graph_obj_name
 
-        #defaults to False
+        # defaults to False
         if self.in_session:
             meta['inSession'] = True
 
-        #defaults to True
+        # defaults to True
         if not self.isolate:
             meta['isolate'] = False
 
-        #defaults to True
+        # defaults to True
         if not self.in_transaction:
             meta['transaction'] = False
 
@@ -267,7 +294,7 @@ class ScriptRequest(RexProMessage):
         Checks that the parameters are ok
         (no invalid types, no weird key names)
         """
-        for k,v in self.params.items():
+        for k, v in self.params.items():
 
             if re.findall(r'^[0-9]', k):
                 raise exceptions.RexProScriptException(
@@ -279,13 +306,7 @@ class ScriptRequest(RexProMessage):
                     )
                 )
 
-            if not isinstance(v, (int,
-                                  long,
-                                  float,
-                                  basestring,
-                                  dict,
-                                  list,
-                                  tuple)):
+            if not isinstance(v, string_types + integer_types + float_types + array_types):
                 raise exceptions.RexProScriptException(
                     "{} is an unsupported type".format(type(v))
                 )
