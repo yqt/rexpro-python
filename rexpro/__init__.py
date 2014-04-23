@@ -1,4 +1,4 @@
-__author__ = 'bdeggleston'
-__version__ = "0.1.1"
+__author__ = 'platinummonkey'
+__version__ = "0.1.2"
 
 from rexpro.connection import RexProConnection
