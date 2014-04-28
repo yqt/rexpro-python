@@ -1,17 +1,14 @@
+from gevent.socket import socket
+from gevent.queue import Queue
+
 from rexpro.exceptions import RexProConnectionException
 from rexpro.messages import ErrorResponse
 
 from contextlib import contextmanager
-from hashlib import md5
-from rexpro._compat import queue
 import struct
-from socket import socket
-from textwrap import dedent
 
 from rexpro import exceptions
 from rexpro import messages
-from rexpro import utils
-import warnings
 
 
 class RexProSocket(socket):
@@ -96,7 +93,8 @@ class RexProSocket(socket):
 
 class RexProConnectionPool(object):
 
-    def __init__(self, host, port, size):
+    def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None,
+                 pool_size=10):
         """
         Connection constructor
 
@@ -104,56 +102,155 @@ class RexProConnectionPool(object):
         :type host: str (ip address)
         :param port: the server port to connect to
         :type port: int
-        :param size: the initial connection pool size
-        :type size: int
+        :param graph_name: the graph to connect to
+        :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
+        :param username: the username to use for authentication (optional)
+        :type username: str
+        :param password: the password to use for authentication (optional)
+        :type password: str
+        :param pool_size: the initial connection pool size
+        :type pool_size: int
         """
 
         self.host = host
         self.port = port
-        self.size = size
+        self.graph_name = graph_name
+        self.graph_obj_name = graph_obj_name
+        self.username = username
+        self.password = password
+        self.timeout = timeout
 
-        self.pool = queue.Queue()
-        for i in range(size):
-            self.pool.put(self._new_conn())
+        self.pool_size = pool_size
+        self.pool = Queue()
+        self.size = 0
 
-    def _new_conn(self):
-        """
-        Creates and returns a new connection
-        """
-        conn = RexProSocket()
-        conn.connect((self.host, self.port))
-        return conn
+    def get(self, *args, **kwargs):
+        """ Retrieve a rexpro connection from the pool
 
-    def get(self):
+        :param host: the rexpro server to connect to
+        :type host: str (ip address)
+        :param port: the rexpro server port to connect to
+        :type port: int
+        :param graph_name: the graph to connect to
+        :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
+        :param username: the username to use for authentication (optional)
+        :type username: str
+        :param password: the password to use for authentication (optional)
+        :type password: str
+        :rtype: RexProConnection
         """
-        Returns a connection, creating a new one if the pool is empty
-        """
-        if self.pool.empty():
-            return self._new_conn()
-        return self.pool.get()
+        pool = self.pool
+        if self.size >= self.pool_size or pool.qsize():
+            return pool.get()
+        else:
+            self.size += 1
+            try:
+                new_item = self._create_connection(*args, **kwargs)
+            except:
+                self.size -= 1
+                raise
+            return new_item
 
     def put(self, conn):
-        """
-        returns a connection to the pool, will close the connection if the pool is full
-        """
-        if self.pool.qsize() >= self.size:
-            conn.close()
-            return
+        """ Restore a connection to the pool
 
+        :param conn: A rexpro connection to restore to the pool
+        :type conn: RexProConnection
+        """
         self.pool.put(conn)
 
-    @contextmanager
-    def contextual_connection(self):
-        """
-        context manager that will open, yield, and close a connection
-        """
-        conn = self.get()
-        yield conn
-        self.put(conn)
-
-    def __del__(self):
+    def close_all(self):
+        """ Close all pool connections for a clean shutdown """
         while not self.pool.empty():
-            self.pool.get().close()
+            conn = self.pool.get_nowait()
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    @contextmanager
+    def connection(self, *args, **kwargs):
+        """ Context manager that conveniently grabs a connection from the pool and provides it with the context
+        cleanly closes up the connection and restores it to the pool afterwards
+
+        :param host: the rexpro server to connect to
+        :type host: str (ip address)
+        :param port: the rexpro server port to connect to
+        :type port: int
+        :param graph_name: the graph to connect to
+        :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
+        :param username: the username to use for authentication (optional)
+        :type username: str
+        :param password: the password to use for authentication (optional)
+        :type password: str
+        """
+        conn = self.create_connection(*args, **kwargs)
+        if not conn:
+            raise RexProConnectionException("Cannot commit because connection was closed: %r" % (conn, ))
+        with conn.transaction:
+            yield
+        if conn is not None:
+            self.close_connection(conn)
+
+    def _create_connection(self, host=None, port=None, graph_name=None, graph_obj_name=None, username=None,
+                           password=None, timeout=None):
+        """ Create a RexProConnection using the provided parameters, defaults to Pool defaults
+
+        :param host: the rexpro server to connect to
+        :type host: str (ip address)
+        :param port: the rexpro server port to connect to
+        :type port: int
+        :param graph_name: the graph to connect to
+        :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
+        :param username: the username to use for authentication (optional)
+        :type username: str
+        :param password: the password to use for authentication (optional)
+        :type password: str
+        :rtype: RexProConnection
+        """
+        return RexProConnection(host=host or self.host,
+                                port=port or self.port,
+                                graph_name=graph_name or self.graph_name,
+                                graph_obj_name=graph_obj_name or self.graph_obj_name,
+                                username=username or self.username,
+                                password=password or self.password,
+                                timeout=timeout or self.timeout)
+
+    def create_connection(self, *args, **kwargs):
+        """ Get a connection from the pool if available, otherwise return a new connection if the pool isn't full
+
+        :param host: the rexpro server to connect to
+        :type host: str (ip address)
+        :param port: the rexpro server port to connect to
+        :type port: int
+        :param graph_name: the graph to connect to
+        :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
+        :param username: the username to use for authentication (optional)
+        :type username: str
+        :param password: the password to use for authentication (optional)
+        :type password: str
+        :rtype: RexProConnection
+        """
+        return self.get(*args, **kwargs)
+
+    def close_connection(self, conn):
+        """ Close a connection and restore it to the pool
+
+        :param conn: a rexpro connection that was pull from the Pool
+        :type conn: RexProConnection
+        """
+        conn.close()
+        self.put(conn)
 
 
 class RexProConnection(object):
@@ -168,6 +265,8 @@ class RexProConnection(object):
         :type port: int
         :param graph_name: the graph to connect to
         :type graph_name: str
+        :param graph_obj_name: The graph object to use
+        :type graph_obj_name: str
         :param username: the username to use for authentication (optional)
         :type username: str
         :param password: the password to use for authentication (optional)
@@ -176,6 +275,7 @@ class RexProConnection(object):
         self.host = host
         self.port = port
         self.graph_name = graph_name
+        self.graph_obj_name = graph_obj_name
         self.username = username
         self.password = password
         self.timeout = timeout
@@ -239,6 +339,7 @@ class RexProConnection(object):
         self._in_transaction = False
 
     def close(self):
+        """ Close a connection """
         self._conn.send_message(
             messages.SessionRequest(
                 session_key=self._session_key,

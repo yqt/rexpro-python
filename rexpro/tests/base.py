@@ -1,12 +1,9 @@
-from rexpro.messages import ScriptRequest, MsgPackScriptResponse
-
-__author__ = 'bdeggleston'
-
 from unittest import TestCase
 from nose.plugins.attrib import attr
 from functools import wraps
 
 from rexpro.connection import RexProConnection, RexProSocket
+from rexpro.messages import ScriptRequest, MsgPackScriptResponse
 
 
 def multi_graph(func):

@@ -1,5 +1,3 @@
-__author__ = 'bdeggleston'
-
 from unittest import skip
 from nose.plugins.attrib import attr
 from mock import patch
@@ -14,11 +12,11 @@ from rexpro import exceptions
 class TestConnection(BaseRexProTestCase):
 
     def test_connection_success(self):
-        """ Development test to aid in debugging """
+        """ Test Creating a connection """
         conn = self.get_connection()
 
     def test_attempting_to_connect_to_an_invalid_graphname_raises_exception(self):
-        """ Attempting to connect to a nonexistant graph should raise a RexProConnectionExeption """
+        """ Attempting to connect to a nonexistant graph should raise a RexProConnectionException """
         with self.assertRaises(exceptions.RexProConnectionException):
             self.get_connection(graphname='nothing')
 

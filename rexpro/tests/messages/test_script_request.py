@@ -1,5 +1,3 @@
-__author__ = 'bdeggleston'
-
 from nose.plugins.attrib import attr
 from rexpro.messages import ScriptRequest, MsgPackScriptResponse, ErrorResponse, SessionRequest, SessionResponse
 from rexpro.tests.base import BaseRexProTestCase, multi_graph

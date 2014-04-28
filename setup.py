@@ -4,7 +4,9 @@ from setuptools import setup, find_packages
 #python setup.py register
 #python setup.py sdist upload
 
-version = "0.1.3"
+import rexpro
+version = rexpro.__version__
+
 
 long_desc = """
 Python RexPro interface
@@ -26,7 +28,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords='rexster,tinkerpop,rexpro,graphdb',
-    install_requires=['msgpack-python', 'six==1.6.1'],
+    install_requires=['msgpack-python', 'six==1.6.1', 'gevent>=1.0'],
     extra_requires={
         'develop': ['nose==1.3.0', 'coverage==3.7.1', 'tox==1.7.1'],
     },
