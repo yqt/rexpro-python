@@ -15,3 +15,4 @@ class RexProScriptException(RexProException):
     """
     Raised when there's an error with a script request
     """
+    pass

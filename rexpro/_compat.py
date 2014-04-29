@@ -26,5 +26,4 @@ reraise = six.reraise
 with_metaclass = six.with_metaclass
 print_ = six.print_
 
-queue = six.moves.queue
-urllib = six.moves.urllib
+from gevent import queue
