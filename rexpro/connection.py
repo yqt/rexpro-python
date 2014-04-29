@@ -193,8 +193,8 @@ class RexProConnectionPool(object):
         conn = self.create_connection(*args, **kwargs)
         if not conn:
             raise RexProConnectionException("Cannot commit because connection was closed: %r" % (conn, ))
-        with conn.transaction:
-            yield
+        with conn.transaction():
+            yield conn
         if conn is not None:
             self.close_connection(conn)
 

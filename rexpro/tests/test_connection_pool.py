@@ -90,3 +90,9 @@ class TestConnectionPooling(TestCase):
             )
 
         gevent.joinall(threads, timeout=5)
+
+    def test_context_manager(self):
+        pool = self.get_pool()
+        with pool.connection() as conn:
+            results = conn.execute(script='values', params={'values': 5})
+            self.assertEqual(results, 5)
