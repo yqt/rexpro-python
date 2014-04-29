@@ -249,7 +249,6 @@ class RexProConnectionPool(object):
         :param conn: a rexpro connection that was pull from the Pool
         :type conn: RexProConnection
         """
-        conn.close()
         self.put(conn)
 
 
