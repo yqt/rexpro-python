@@ -14,7 +14,10 @@ from rexpro import messages
 
 
 class RexProSocket(gsocket):
-    """ Subclass of python's socket that sends and received rexpro messages """
+    """ Subclass of python's socket that sends and received rexpro messages
+
+    inherits from gevent.socket.socket
+    """
 
     def send_message(self, msg):
         """
@@ -31,22 +34,40 @@ class RexProSocket(gsocket):
 
 
         Basic Message Structure:  reference: https://github.com/tinkerpop/rexster/wiki/RexPro-Messages
-            segment             | type (bytes)  | description
-            protocol version    | byte (1)      | Version of RexPro, should be 1
-            serializer type     | byte (1)      | Type of Serializer: msgpack==0, json==1
-            reserved for future | byte (4)      | Reserved for future use.
-            message type        | byte (1)      | Tye type of message as described in the value columns.
-            message size        | int (4)       | The length of the message body
-            message body        | byte (n)      | The body of the message itself. The Good, Bad and Ugly.
+
+        +---------------------+--------------+---------------------------------------------------------+
+        | segment             | type (bytes) | description                                             |
+        +=====================+==============+=========================================================+
+        | protocol version    | byte (1)     | Version of RexPro, should be 1                          |
+        +---------------------+--------------+---------------------------------------------------------+
+        | serializer type     | byte (1)     | Type of Serializer: msgpack==0, json==1                 |
+        +---------------------+--------------+---------------------------------------------------------+
+        | reserved for future | byte (4)     | Reserved for future use.                                |
+        +---------------------+--------------+---------------------------------------------------------+
+        | message type        | byte (1)     | Tye type of message as described in the value columns.  |
+        +---------------------+--------------+---------------------------------------------------------+
+        | message size        | int (4)      | The length of the message body                          |
+        +---------------------+--------------+---------------------------------------------------------+
+        | message body        | byte (n)     | The body of the message itself. The Good, Bad and Ugly. |
+        +---------------------+--------------+---------------------------------------------------------+
 
 
-        Message Types
-            message type  | type     | value | description
-            session       | request  | 1     | A request to open or close the session with the RexPro Server
-            session       | response | 2     | RexPro server response to session request
-            script        | request  | 3     | A request to process a gremlin script
-            script        | response | 5     | A response to a script request
-            error         | response | 0     | A RexPro server error response
+
+        Message Types:
+
+        +--------------+----------+-------+---------------------------------------------------------------+
+        | message type | type     | value | description                                                   |
+        +==============+==========+=======+===============================================================+
+        | session      | request  | 1     | A request to open or close the session with the RexPro Server |
+        +--------------+----------+-------+---------------------------------------------------------------+
+        | session      | response | 2     | RexPro server response to session request                     |
+        +--------------+----------+-------+---------------------------------------------------------------+
+        | script       | request  | 3     | A request to process a gremlin script                         |
+        +--------------+----------+-------+---------------------------------------------------------------+
+        | script       | response | 5     | A response to a script request                                |
+        +--------------+----------+-------+---------------------------------------------------------------+
+        | error        | response | 0     | A RexPro server error response                                |
+        +--------------+----------+-------+---------------------------------------------------------------+
 
         :returns: RexProMessage
         """
@@ -375,7 +396,7 @@ class RexProConnection(object):
         Context manager that opens a transaction and closes it at the end of it's code block, use with the 'with'
         statement
 
-        Example:
+        Example::
 
             conn = RexproConnection(host, port, graph_name)
             with conn.transaction():

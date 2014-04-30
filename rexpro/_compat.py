@@ -25,5 +25,3 @@ reraise = six.reraise
 
 with_metaclass = six.with_metaclass
 print_ = six.print_
-
-from gevent import queue

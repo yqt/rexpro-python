@@ -1,5 +1,3 @@
-__author__ = 'bdeggleston'
-
 import json
 import re
 import struct
@@ -30,8 +28,7 @@ class RexProMessage(object):
 
     def get_meta(self):
         """
-        Returns a dictionary of message meta
-        data depending on other set values
+        Returns a dictionary of message meta data depending on other set values
         """
         return {}
 
@@ -56,9 +53,15 @@ class RexProMessage(object):
 
         The format as far as I can tell is this:
 
-        1B: Message type
-        4B: message length
-        nB: msgpack serialized message
+        +--------------+----------------------------+
+        | type (bytes) | description                |
+        +==============+============================+
+        | byte(1)      | Message type               |
+        +--------------+----------------------------+
+        | byte(4)      | Message Length             |
+        +--------------+----------------------------+
+        | byte(n)      | msgpack serialized message |
+        +--------------+----------------------------+
 
         the actual message is just a list of values, all seem to start with version, session, and a unique request id
         the session and unique request id are uuid bytes, and the version and are each 1 byte unsigned integers
@@ -177,19 +180,37 @@ class SessionRequest(RexProMessage):
     def get_message_list(self):
         """ Constructs a Session Request Message List
 
-        field     | type      | description
-        Session   | byte (16) | The UUID for the Session. Set each byte to zero for an "empty" session.
-        Request   | byte (16) | The UUID for the request. Uniquely identifies the request from the client.
-                  |           | Get's passed back and forth so the response can be mapped to a request.
-        Meta      | Map       | Message specific properties described below
-        Username  | String    | The username to access the RexPro Server assuming auth is turned on. Ignored if no auth.
-        Password  | String    | The password to access the RexPro Server assuming auth is turned on. Ignored if no auth.
+        +-----------+-----------+------------------------------------------------------------------------------------+
+        | field     | type      | description                                                                        |
+        +===========+===========+====================================================================================+
+        | Session   | byte (16) | The UUID for the Session. Set each byte to zero for an "empty" session.            |
+        +-----------+-----------+------------------------------------------------------------------------------------+
+        | Request   | byte (16) | The UUID for the request. Uniquely identifies the request from the client.         |
+        |           |           | Get's passed back and forth so the response can be mapped to a request.            |
+        +-----------+-----------+------------------------------------------------------------------------------------+
+        | Meta      | Map       | Message specific properties described below                                        |
+        +-----------+-----------+------------------------------------------------------------------------------------+
+        | Username  | String    | The username to access the RexPro Server assuming auth is turned on. Ignored if no |
+        |           |           | auth.                                                                              |
+        +-----------+-----------+------------------------------------------------------------------------------------+
+        | Password  | String    | The password to access the RexPro Server assuming auth is turned on. Ignored if no |
+        |           |           | auth.                                                                              |
+        +-----------+-----------+------------------------------------------------------------------------------------+
+
 
         Meta Attributes:
-        field        | type   | description
-        graphName    | String | The name of the graph to open a session on. Optional
-        graphObjName | String | The variable name of the Graph object, defaults to `g`. Optional
-        killSession  | Bool   | If true, the given session will be destroyed, else one will be created, default False
+
+        +--------------+--------+---------------------------------------------------------------------------------+
+        | field        | type   | description                                                                     |
+        +==============+========+=================================================================================+
+        | graphName    | String | The name of the graph to open a session on. Optional                            |
+        +--------------+--------+---------------------------------------------------------------------------------+
+        | graphObjName | String | The variable name of the Graph object, defaults to `g`. Optional                |
+        +--------------+--------+---------------------------------------------------------------------------------+
+        | killSession  | Bool   | If true, the given session will be destroyed, else one will be created, default |
+        +--------------+--------+---------------------------------------------------------------------------------+
+        |              |        | False                                                                           |
+        +--------------+--------+---------------------------------------------------------------------------------+
         """
 
         message_list = super(SessionRequest, self).get_message_list() + [

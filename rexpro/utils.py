@@ -1,11 +1,9 @@
-__author__ = 'bdeggleston'
-
-
 def int_to_32bit_array(val):
-    """
-    Converts an integer to 32 bit bytearray
+    """Converts an integer to 32 bit bytearray
+
     :param val: the value to convert to bytes
-    :return: bytearray
+    :type val: int
+    :rtype: bytearray
     """
     value = val
     bytes = bytearray()
@@ -16,10 +14,12 @@ def int_to_32bit_array(val):
 
 
 def int_from_32bit_array(val):
-    """
-    Converts an integer from a 32 bit bytearray
+    """Converts an integer from a 32 bit bytearray
+
     :param val: the value to convert to an int
-    :return: int
+    :type val: int
+
+    :rtype: int
     """
     rval = 0
     for fragment in bytearray(val):

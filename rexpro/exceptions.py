@@ -1,6 +1,3 @@
-__author__ = 'bdeggleston'
-
-
 class RexProException(Exception):
     """ Base RexProException """
     pass
