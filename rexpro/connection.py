@@ -1,5 +1,7 @@
-from gevent.socket import socket
+from socket import SHUT_RDWR
+from gevent.socket import socket as gsocket
 from gevent.queue import Queue
+from gevent.select import select as gselect
 
 from rexpro.exceptions import RexProConnectionException
 from rexpro.messages import ErrorResponse
@@ -11,7 +13,7 @@ from rexpro import exceptions
 from rexpro import messages
 
 
-class RexProSocket(socket):
+class RexProSocket(gsocket):
     """ Subclass of python's socket that sends and received rexpro messages """
 
     def send_message(self, msg):
@@ -350,12 +352,37 @@ class RexProConnection(object):
         if isinstance(response, ErrorResponse):
             raise RexProConnectionException(response.message)
 
+    def test_connection(self):
+        """ Test the socket, if it's errored or closed out, try to reconnect. Otherwise raise and Exception """
+        readable, writeable, in_error = gselect([self._conn], [self._conn], [], timeout=5)
+        if not readable and not writeable:
+            try:
+                self._conn.shutdown(SHUT_RDWR)
+                self._conn.close()
+                self._conn.connect((self.host, self.port))
+                readable, writeable, _ = gselect([self._conn], [self._conn], [], timeout=5)
+                if not readable and not writeable:
+                    raise exceptions.RexProConnectionException(
+                        "Can not successfully reconnect to {}:{}".format(self.host, self.port)
+                    )
+            except Exception as e:
+                raise RexProConnectionException("Could not reconnect to database %s:%s : %s" %
+                                                (self.host, self.port, e))
+
     @contextmanager
     def transaction(self):
         """
-        Context manager that opens a transaction and closes it at
-        the end of it's code block, use with the 'with' statement
+        Context manager that opens a transaction and closes it at the end of it's code block, use with the 'with'
+        statement
+
+        Example:
+
+            conn = RexproConnection(host, port, graph_name)
+            with conn.transaction():
+                results = conn.execute(script, params)
+
         """
+        self.test_connection()
         self.open_transaction()
         yield
         self.close_transaction()
