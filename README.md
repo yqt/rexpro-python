@@ -10,7 +10,7 @@ this library relies on recent changes to the rexster RexPro protocol, so you'll 
 Documentation
 =============
 
-rexpro documentation can be found at http://rexpro.readthedocs.org/
+rexpro documentation can be found at http://rexpro-python.readthedocs.org/
 
 Installation
 ============
