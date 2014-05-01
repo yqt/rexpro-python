@@ -4,8 +4,9 @@ from setuptools import setup, find_packages
 #python setup.py register
 #python setup.py sdist upload
 
-import rexpro
-version = rexpro.__version__
+#import rexpro
+#version = rexpro.__version__
+version = open('rexpro/VERSION', 'r').readline().strip()
 
 
 long_desc = """
