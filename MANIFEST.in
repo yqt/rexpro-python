@@ -1,6 +1,4 @@
 include AUTHORS
 include LICENSE
 include README.md
-recursive-include rexpro *.py
-
-
+recursive-include rexpro *.py VERSION
