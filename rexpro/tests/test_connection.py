@@ -17,7 +17,7 @@ class TestConnection(BaseRexProTestCase):
 
     def test_attempting_to_connect_to_an_invalid_graphname_raises_exception(self):
         """ Attempting to connect to a nonexistant graph should raise a RexProConnectionException """
-        with self.assertRaises(exceptions.RexProConnectionException):
+        with self.assertRaises(exceptions.RexProGraphConfigException):
             self.get_connection(graphname='nothing')
 
     def test_invalid_connection_info_raises_exception(self):

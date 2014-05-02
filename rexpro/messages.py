@@ -124,6 +124,9 @@ class ErrorResponse(RexProMessage):
     def __init__(self, meta, message, **kwargs):
         super(ErrorResponse, self).__init__(**kwargs)
         self.meta = meta
+        self.meta_orig = meta
+        if isinstance(self.meta, dict):
+            self.meta = self.meta['flag']
         self.message = message
 
     @classmethod
@@ -131,6 +134,24 @@ class ErrorResponse(RexProMessage):
         message = msgpack.loads(data)
         session, request, meta, msg = message
         return cls(message=msg, meta=meta)
+
+    def raise_exception(self):
+        if self.meta == self.INVALID_MESSAGE_ERROR:
+            raise exceptions.RexProInvalidMessageException(self.message)
+        elif self.meta == self.INVALID_SESSION_ERROR:
+            raise exceptions.RexProInvalidSessionException(self.message)
+        elif self.meta == self.SCRIPT_FAILURE_ERROR:
+            raise exceptions.RexProScriptException(self.message)
+        elif self.meta == self.AUTH_FAILURE_ERROR:
+            raise exceptions.RexProAuthenticationFailure(self.message)
+        elif self.meta == self.GRAPH_CONFIG_ERROR:
+            raise exceptions.RexProGraphConfigException(self.message)
+        elif self.meta == self.CHANNEL_CONFIG_ERROR:
+            raise exceptions.RexProChannelConfigException(self.message)
+        elif self.meta == self.RESULT_SERIALIZATION_ERROR:
+            raise exceptions.RexProSerializationException(self.message)
+        else:
+            raise exceptions.RexProScriptException("Meta: {} ({}), Message: {}".format(self.meta, type(self.meta), self.message))
 
 
 class SessionRequest(RexProMessage):

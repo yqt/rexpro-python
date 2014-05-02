@@ -330,7 +330,7 @@ class RexProConnection(object):
         )
         response = self._conn.get_response()
         if isinstance(response, ErrorResponse):
-            raise RexProConnectionException(response.message)
+            response.raise_exception()
         self._session_key = response.session_key
 
         self.graph_features = self.execute('g.getFeatures().toMap()')
@@ -371,24 +371,36 @@ class RexProConnection(object):
         )
         response = self._conn.get_response()
         if isinstance(response, ErrorResponse):
-            raise RexProConnectionException(response.message)
+            response.raise_exception()
 
     def test_connection(self):
         """ Test the socket, if it's errored or closed out, try to reconnect. Otherwise raise and Exception """
-        readable, writeable, in_error = gselect([self._conn], [self._conn], [], timeout=5)
+
+        readable, writeable, in_error = gselect([self._conn], [self._conn], [], timeout=1)
         if not readable and not writeable:
-            try:
-                self._conn.shutdown(SHUT_RDWR)
-                self._conn.close()
-                self._conn.connect((self.host, self.port))
-                readable, writeable, _ = gselect([self._conn], [self._conn], [], timeout=5)
-                if not readable and not writeable:
-                    raise exceptions.RexProConnectionException(
-                        "Can not successfully reconnect to {}:{}".format(self.host, self.port)
-                    )
-            except Exception as e:
-                raise RexProConnectionException("Could not reconnect to database %s:%s : %s" %
-                                                (self.host, self.port, e))
+            for timeout in [2**i for i in range(4)]:
+                try:
+                    self._conn.shutdown(SHUT_RDWR)
+                    self._conn.close()
+                    self._conn.connect((self.host, self.port))
+                    readable, writeable, _ = gselect([self._conn], [self._conn], [], timeout=5)
+                    if not readable and not writeable:
+                        pass
+                    else:
+                        # We have reconnected
+                        self._conn.settimeout(self.timeout)
+                        # indicates that we're in a transaction
+                        self._in_transaction = False
+
+                        # stores the session key
+                        self._session_key = None
+                        self._open_session()
+                        return None
+                except Exception as e:
+                    """ Ignore this at let the outer handler handle iterations """
+                    pass
+
+            raise RexProConnectionException("Could not reconnect to database %s:%s" % (self.host, self.port))
 
     @contextmanager
     def transaction(self):
@@ -437,6 +449,6 @@ class RexProConnection(object):
         response = self._conn.get_response()
 
         if isinstance(response, messages.ErrorResponse):
-            raise exceptions.RexProScriptException(response.message)
+            response.raise_exception()
 
         return response.results

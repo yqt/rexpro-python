@@ -152,7 +152,8 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
         response = conn.get_response()
 
         self.assertErrorResponse(response)
-        self.assertEqual(response.meta.get('flag'), ErrorResponse.SCRIPT_FAILURE_ERROR)
+        self.assertEqual(response.meta_orig.get('flag'), ErrorResponse.SCRIPT_FAILURE_ERROR)
+        self.assertEqual(response.meta, ErrorResponse.SCRIPT_FAILURE_ERROR)
 
     def test_object_persistence_within_transactions(self):
         """ Tests that objects defined in one request are available in the next, within an open transaction """
