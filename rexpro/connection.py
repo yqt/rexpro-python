@@ -378,12 +378,12 @@ class RexProConnection(object):
 
         readable, writeable, in_error = gselect([self._conn], [self._conn], [], timeout=1)
         if not readable and not writeable:
-            for timeout in [2**i for i in range(4)]:
+            for timeout in [2, 4, 8]:
                 try:
                     self._conn.shutdown(SHUT_RDWR)
                     self._conn.close()
                     self._conn.connect((self.host, self.port))
-                    readable, writeable, _ = gselect([self._conn], [self._conn], [], timeout=5)
+                    readable, writeable, _ = gselect([self._conn], [self._conn], [], timeout=timeout)
                     if not readable and not writeable:
                         pass
                     else:
