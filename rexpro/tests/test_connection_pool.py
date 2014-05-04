@@ -1,6 +1,7 @@
 from unittest import TestCase
 from nose.plugins.attrib import attr
 from nose.tools import nottest
+import os
 
 from rexpro.connection import RexProConnectionPool, RexProConnection
 from rexpro._compat import print_
@@ -11,8 +12,8 @@ import gevent
 @attr('unit', 'pooling')
 class TestConnectionPooling(TestCase):
 
-    host = 'localhost'
-    port = 8184
+    host = os.getenv('TITAN_HOST', 'localhost')
+    port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
     default_graphname = 'emptygraph'
     default_graph_obj_name = 'g'
     username = 'rexster'

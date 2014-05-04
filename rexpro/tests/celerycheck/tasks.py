@@ -2,10 +2,13 @@ from celery import group, Celery
 from celery.utils.log import get_task_logger
 from rexpro.connection import RexProConnectionPool
 from rexpro._compat import print_
+import os
 
 logger = get_task_logger(__name__)
 
-pool = RexProConnectionPool('localhost', 8184, 'graph')
+pool = RexProConnectionPool(os.getenv('TITAN_HOST', 'localhost'),
+                            int(os.getenv('TITAN_REXPRO_PORT', 8184)),
+                            'graph')
 
 app = Celery('tasks')
 app.config_from_object('celeryconfig')
