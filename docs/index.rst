@@ -6,6 +6,13 @@ rexpro
 rexpro is an experimental RexPro socket interface for python
 
 
+.. image:: https://app.wercker.com/status/6a2160385debe13745f2ff3eec734dac/m/master
+   :alt: Build Status
+   :align: center
+   :target: https://app.wercker.com/project/bykey/6a2160385debe13745f2ff3eec734dac
+
+
+
 .. _features:
 
 Features

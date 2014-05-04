@@ -1,0 +1,22 @@
+box: wercker/python
+services:
+  - platinummonkey/titan-stable
+build:
+  steps:
+    - virtualenv:
+        install_wheel: false
+    - script:
+        name: test install rexpro
+        code: python setup.py -q install
+    - pip-install:
+        extra_args: "-q"
+        requirements_file: "requirements.pip"
+    - script:
+        name: test uninstall rexpro
+        code: pip uninstall -y rexpro
+    - script:
+        name: Test ping server
+        code: ping -c 3 $TITAN_HOST && ip addr && nc -q 10 -v -z $TITAN_HOST 8184
+    - script:
+        name: Run Coverage tests
+        code: ./run_coverage.sh

@@ -5,7 +5,9 @@ rexpro-python is a RexPro socket interface for python, specifically designed for
 (http://thinkaurelius.github.io/titan/) via RexPro (https://github.com/tinkerpop/rexster/wiki/RexPro).
 For those already familiar with Blueprints (https://github.com/tinkerpop/blueprints/wiki) there is is a simple example.
 
-this library relies on recent changes to the rexster RexPro protocol, so you'll need to clone and build the rexster master branch if you want to use
+
+[![wercker status](https://app.wercker.com/status/6a2160385debe13745f2ff3eec734dac/m/master "wercker status")](https://app.wercker.com/project/bykey/6a2160385debe13745f2ff3eec734dac)
+
 
 Documentation
 =============

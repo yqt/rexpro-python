@@ -1,6 +1,7 @@
 from unittest import TestCase
 from nose.plugins.attrib import attr
 from functools import wraps
+import os
 
 from rexpro.connection import RexProConnection, RexProSocket
 from rexpro.messages import ScriptRequest, MsgPackScriptResponse
@@ -33,8 +34,8 @@ class BaseRexProTestCase(TestCase):
     """
     Base test case for rexpro tests
     """
-    host = 'localhost'
-    port = 8184
+    host = os.getenv('TITAN_HOST', 'localhost')
+    port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
     default_graphname = 'emptygraph'
     username = 'rexster'
     password = 'rexster'
