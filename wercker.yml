@@ -10,7 +10,7 @@ build:
         code: python setup.py -q install
     - pip-install:
         extra_args: "-q"
-        requirements_file: "requirements.pip"
+        requirements_file: "requirements.txt"
     - script:
         name: test uninstall rexpro
         code: pip uninstall -y rexpro
