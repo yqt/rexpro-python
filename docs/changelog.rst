@@ -5,6 +5,23 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.1.9
+------
+  * Robust Reconnect and session handling
+  * Allow Gevent, Eventlet and native python socket implementations
+  * Concurrency options are optional to use the library
+     * To install with gevent: ``pip install rexpro[gevent]``
+     * To install with eventlet: ``pip install rexpro[eventlet]``
+  * Documentation Improvements
+
+v0.1.8
+------
+  * Naive Reconnect
+
+v0.1.7
+------
+  * Documentation
+
 v0.1.6
 ------
 

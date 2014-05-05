@@ -6,8 +6,37 @@ from uuid import uuid1, uuid4
 import msgpack
 
 from rexpro import exceptions
-from rexpro import utils
 from rexpro._compat import string_types, integer_types, float_types, array_types
+
+
+def int_to_32bit_array(val):
+    """Converts an integer to 32 bit bytearray
+
+    :param val: the value to convert to bytes
+    :type val: int
+    :rtype: bytearray
+    """
+    value = val
+    bytes = bytearray()
+    for i in range(4):
+        bytes.insert(0, (value & 0xff))
+        value >>= 8
+    return str(bytes)
+
+
+def int_from_32bit_array(val):
+    """Converts an integer from a 32 bit bytearray
+
+    :param val: the value to convert to an int
+    :type val: int
+
+    :rtype: int
+    """
+    rval = 0
+    for fragment in bytearray(val):
+        rval <<= 8
+        rval |= fragment
+    return rval
 
 
 class MessageTypes(object):
@@ -361,9 +390,9 @@ class ScriptRequest(RexProMessage):
         for k, v in self.params.items():
             key = k.encode('utf-8')
             val = json.dumps(v).encode('utf-8')
-            data += utils.int_to_32bit_array(len(key))
+            data += int_to_32bit_array(len(key))
             data += key
-            data += utils.int_to_32bit_array(len(val))
+            data += int_to_32bit_array(len(val))
             data += val
         return str(data)
 
