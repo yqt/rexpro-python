@@ -264,7 +264,10 @@ class RexProConnectionPool(object):
         :type password: str
         :rtype: RexProConnection
         """
-        return self.get(*args, **kwargs)
+        conn = self.get(*args, **kwargs)
+        if not conn._opened:
+            conn.open()
+        return conn
 
     def close_connection(self, conn):
         """ Close a connection and restore it to the pool
@@ -272,6 +275,8 @@ class RexProConnectionPool(object):
         :param conn: a rexpro connection that was pull from the Pool
         :type conn: RexProConnection
         """
+        if conn._opened:
+            conn.close()
         self.put(conn)
 
 
@@ -303,21 +308,12 @@ class RexProConnection(object):
         self.timeout = timeout
 
         self.graph_features = None
-
-        # connect to server
-        self._conn = RexProSocket()
-        self._conn.settimeout(self.timeout)
-        try:
-            self._conn.connect((self.host, self.port))
-        except Exception as e:
-            raise RexProConnectionException("Could not connect to database: %s" % e)
-
-        # indicates that we're in a transaction
+        self._conn = None
         self._in_transaction = False
-
-        # stores the session key
         self._session_key = None
-        self._open_session()
+        self._opened = False
+
+        self.open()
 
     def _open_session(self):
         """ Creates a session with rexster and creates the graph object """
@@ -349,7 +345,8 @@ class RexProConnection(object):
         """
         closes an open transaction
 
-        :param success: indicates which status to close the transaction with, True will commit the changes, False will roll them back
+        :param success: indicates which status to close the transaction with, True will commit the changes,
+                         False will roll them back
         :type success: bool
         """
         if not self._in_transaction:
@@ -370,8 +367,28 @@ class RexProConnection(object):
             )
         )
         response = self._conn.get_response()
+        self._opened = False
+        self._session_key = None
+        self._in_transaction = False
         if isinstance(response, ErrorResponse):
             response.raise_exception()
+
+    def open(self):
+        # connect to server
+        self._conn = RexProSocket()
+        self._conn.settimeout(self.timeout)
+        try:
+            self._conn.connect((self.host, self.port))
+        except Exception as e:
+            raise RexProConnectionException("Could not connect to database: %s" % e)
+
+        # indicates that we're in a transaction
+        self._in_transaction = False
+
+        # stores the session key
+        self._session_key = None
+        self._opened = True
+        self._open_session()
 
     def test_connection(self):
         """ Test the socket, if it's errored or closed out, try to reconnect. Otherwise raise and Exception """
@@ -397,7 +414,7 @@ class RexProConnection(object):
                         self._open_session()
                         return None
                 except Exception as e:
-                    """ Ignore this at let the outer handler handle iterations """
+                    # Ignore this at let the outer handler handle iterations
                     pass
 
             raise RexProConnectionException("Could not reconnect to database %s:%s" % (self.host, self.port))
