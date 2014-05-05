@@ -219,7 +219,7 @@ class RexProConnectionPool(object):
         with conn.transaction():
             yield conn
         if conn is not None:
-            self.close_connection(conn)
+            self.close_connection(conn, soft=True)
 
     def _create_connection(self, host=None, port=None, graph_name=None, graph_obj_name=None, username=None,
                            password=None, timeout=None):
@@ -265,18 +265,19 @@ class RexProConnectionPool(object):
         :rtype: RexProConnection
         """
         conn = self.get(*args, **kwargs)
-        if not conn._opened:
-            conn.open()
+        conn.open(soft=conn._opened)  # if opened, soft open, else hard open
         return conn
 
-    def close_connection(self, conn):
+    def close_connection(self, conn, soft=False):
         """ Close a connection and restore it to the pool
 
         :param conn: a rexpro connection that was pull from the Pool
         :type conn: RexProConnection
+        :param soft: define whether to soft-close the connection or hard-close the socket
+        :type soft: bool
         """
         if conn._opened:
-            conn.close()
+            conn.close(soft=soft)
         self.put(conn)
 
 
@@ -357,7 +358,7 @@ class RexProConnection(object):
         )
         self._in_transaction = False
 
-    def close(self):
+    def close(self, soft=False):
         """ Close a connection """
         self._conn.send_message(
             messages.SessionRequest(
@@ -367,20 +368,22 @@ class RexProConnection(object):
             )
         )
         response = self._conn.get_response()
-        self._opened = False
+        if not soft:
+            self._opened = False
         self._session_key = None
         self._in_transaction = False
         if isinstance(response, ErrorResponse):
             response.raise_exception()
 
-    def open(self):
-        # connect to server
-        self._conn = RexProSocket()
-        self._conn.settimeout(self.timeout)
-        try:
-            self._conn.connect((self.host, self.port))
-        except Exception as e:
-            raise RexProConnectionException("Could not connect to database: %s" % e)
+    def open(self, soft=False):
+        if not soft:
+            # connect to server
+            self._conn = RexProSocket()
+            self._conn.settimeout(self.timeout)
+            try:
+                self._conn.connect((self.host, self.port))
+            except Exception as e:
+                raise RexProConnectionException("Could not connect to database: %s" % e)
 
         # indicates that we're in a transaction
         self._in_transaction = False
