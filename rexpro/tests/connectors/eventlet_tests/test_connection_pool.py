@@ -1,16 +1,14 @@
 from unittest import TestCase
 from nose.plugins.attrib import attr
-from nose.tools import nottest
 import os
 
-from rexpro.connectors.sync import RexProSyncConnectionPool, RexProSyncConnection
-from rexpro._compat import print_
+from rexpro.connectors.reventlet import RexProEventletConnectionPool, RexProEventletConnection
 
-import gevent
+import eventlet
 
 
-@attr('unit', 'pooling')
-class TestConnectionPooling(TestCase):
+@attr('pooling', 'eventlet')
+class TestEventletConnectionPooling(TestCase):
 
     host = os.getenv('TITAN_HOST', 'localhost')
     port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
@@ -25,11 +23,13 @@ class TestConnectionPooling(TestCase):
     sleep sleep_length
     return data
     }
+
+    test_slow_query(sleep_length, data)
     """
 
     def get_pool(self, host=None, port=None, graphname=None, graph_obj_name=None, username=None, password=None,
                  timeout=None):
-        return RexProSyncConnectionPool(
+        return RexProEventletConnectionPool(
             host=host or self.host,
             port=port or self.port,
             graph_name=graphname or self.default_graphname,
@@ -40,16 +40,16 @@ class TestConnectionPooling(TestCase):
         )
 
     def slow_start_simulation(self, pool):
-        gevent.sleep(1)
+        eventlet.sleep(1)
         conn = pool.create_connection()
         return conn
 
     def spawn_slow_network_and_query_slow_response(self, pool, script, sleep_time, data):
         conn = self.slow_start_simulation(pool)
         conn.open_transaction()
-        gevent.sleep(0)
+        eventlet.sleep(0)
         results = conn.execute(script=script, params={'sleep_length': sleep_time, 'data': data})
-        gevent.sleep(0)
+        eventlet.sleep(0)
         conn.close_transaction()
         return results
 
@@ -59,7 +59,7 @@ class TestConnectionPooling(TestCase):
     def test_pool_returns_connection(self):
         pool = self.get_pool()
         conn = pool.create_connection()
-        self.assertIsInstance(conn, RexProSyncConnection)
+        self.assertIsInstance(conn, RexProEventletConnection)
         pool.close_connection(conn)
 
     def test_pool_returns_unique_connections(self):
@@ -77,20 +77,15 @@ class TestConnectionPooling(TestCase):
 
     def test_many_concurrent_connections(self):
         pool = self.get_pool()
-        gevent.joinall([
-            gevent.spawn(pool.create_connection) for _ in xrange(self.NUM_ITER)
-        ])
+        pile = eventlet.GreenPile()
+        [pile.spawn(pool.create_connection) for _ in xrange(self.NUM_ITER)]
 
     def test_unique_connections(self):
         pool = self.get_pool()
-        threads = []
+        pile = eventlet.GreenPile()
         for i in xrange(self.NUM_ITER):
-            threads.append(
-                gevent.spawn(self.spawn_slow_network_and_query_slow_response,
-                             pool, self.SLOW_NETWORK_QUERY, 1, {'value': i, i: 'value'})
-            )
-
-        gevent.joinall(threads, timeout=5)
+            pile.spawn(self.spawn_slow_network_and_query_slow_response,
+                       pool, self.SLOW_NETWORK_QUERY, 1, {'value': i, i: 'value'})
 
     def test_context_manager(self):
         pool = self.get_pool()

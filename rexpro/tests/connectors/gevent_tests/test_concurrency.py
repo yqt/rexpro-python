@@ -1,8 +1,8 @@
+from unittest import TestCase
 from nose.plugins.attrib import attr
-from nose.tools import nottest
+import os
 
-from rexpro.tests.base import BaseRexProTestCase, multi_graph
-from rexpro._compat import print_
+from rexpro.connectors.rgevent import RexProGeventConnection, RexProGeventSocket, RexProGeventConnectionPool
 
 import gevent
 
@@ -18,15 +18,49 @@ def spawn_slow_network_and_query_slow_response(ref, script, sleep_time, data):
     return conn.execute(script=script, params={'sleep_length': sleep_time, 'data': data})
 
 
-@attr('unit', 'concurrency')
-class TestConcurrency(BaseRexProTestCase):
+@attr('concurrency', 'gevent')
+class TestGeventConcurrency(TestCase):
+
+    SOCKET_CLASS = RexProGeventSocket
+    CONN_CLASS = RexProGeventConnection
+    POOL_CLASS = RexProGeventConnectionPool
+
+    host = os.getenv('TITAN_HOST', 'localhost')
+    port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
+    default_graphname = 'emptygraph'
+    username = 'rexster'
+    password = 'rexster'
+    timeout = 30
+
+    test_graphs = [
+        'emptygraph',  # Tinkergraph
+        'graph',  # Tinkergraph
+        #'emptysailgraph',  # in memory sail graph
+        #'sailgraph',  #sail graph
+        #'orientdbsample',  # OrientDB
+        #'neo4jsample',  # Neo4j
+        #'dexsample',  # DexGraph
+        #'titangraph',  # Titan
+    ]
 
     NUM_ITER = 10
     SLOW_NETWORK_QUERY = """def test_slow_query(sleep_length, data) {
     sleep sleep_length
     return data
     }
+
+    test_slow_query(sleep_length, data)
     """
+
+    def get_connection(self, host=None, port=None, graphname=None, username=None, password=None, timeout=None):
+        return self.CONN_CLASS(
+            host or self.host,
+            port or self.port,
+            graphname or self.default_graphname,
+            username=username or self.username,
+            password=password or self.password,
+            timeout=timeout or self.timeout
+        )
 
     def test_start_many_connections(self):
         """ Test starting up many connections """

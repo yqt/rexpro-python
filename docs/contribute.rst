@@ -27,7 +27,7 @@ All pull requests should pass the test suite, which can be launched simply with:
 
 .. note::
 
-    Running test requires `nosetests`, `coverage`, `six`, `gevent`, `redis` and `celery`.
+    Running test requires `nosetests`, `coverage`, `six`, `gevent`, `eventlet`, `redis` and `celery`.
     As well an available titan server.
 
 In order to test coverage, please use:
@@ -45,4 +45,4 @@ Test Server
 `Blueprints <https://github.com/tinkerpop/blueprints/wiki>`_ may be compatible, but further testing would be needed.
 
 Currently Titan 0.4.4 is known to work and can be downloaded:
-`Titan <http://s3.thinkaurelius.com/downloads/titan/titan-server-0.4.2.zip>`_.
+`Titan <http://s3.thinkaurelius.com/downloads/titan/titan-server-0.4.4.zip>`_.

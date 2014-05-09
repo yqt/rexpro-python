@@ -20,8 +20,11 @@ Features
 
  - Straightforward syntax
  - Connection Pooling Support
- - Gevent Socket
- - Tested against Celery (must use ``-P gevent`` argument)
+ - Gevent Compatible - see ``rexpro.connectors.rgevent``
+ - Eventlet Compatible - see ``rexpro.connectors.reventlet``
+ - Tested against Celery
+    - Only Gevent has been tested (must use ``-P gevent`` argument)
+    - Testing needed against default prefork method, and eventlet
 
 
 .. _links:
@@ -47,11 +50,11 @@ PyPI: https://pypi.python.org/pypi/rexpro/
 
     $ pip install rexpro
 
-Source: https://bitbucket.org/wellaware/rexpro.git
+Source: https://github.com/platinummonkey/rexpro-python.git
 
 .. code-block:: sh
 
-    $ git clone git://github.com/platinummonkey/rexpro.git
+    $ git clone git://github.com/platinummonkey/rexpro-python.git
     $ python setup.py install
 
 

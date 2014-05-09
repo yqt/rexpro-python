@@ -1,4 +1,7 @@
 #!/bin/bash
 
 mkdir ./coverage &>/dev/null
-nosetests --attr=unit --with-coverage --cover-erase --cover-package=rexpro --cover-html --cover-xml --cover-min-percentage=80 --cover-html-dir=./coverage/ --cover-xml-file=./coverage/coverage.xml
+# workaround for setting up the codahale metrics in titan - this is a known bug and was fixed, but not merged into titan
+nosetests --attr=metrics-setup &>/dev/null
+# Run actual coverage tests
+nosetests --attr=unit --attr=concurrency --attr=pooling --with-coverage --cover-erase --cover-package=rexpro --cover-html --cover-xml --cover-min-percentage=80 --cover-html-dir=./coverage/ --cover-xml-file=./coverage/coverage.xml

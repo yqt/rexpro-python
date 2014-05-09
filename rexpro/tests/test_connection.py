@@ -11,6 +11,7 @@ from rexpro import exceptions
 @attr('unit')
 class TestConnection(BaseRexProTestCase):
 
+    @attr('metrics-setup')
     def test_connection_success(self):
         """ Test Creating a connection """
         conn = self.get_connection()
@@ -104,7 +105,6 @@ class TestQueries(BaseRexProTestCase):
             def one_val = 5
             one_val
             """,
-            pretty=True
         )
 
         with self.assertRaises(exceptions.RexProScriptException):

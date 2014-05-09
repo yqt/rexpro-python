@@ -7,6 +7,7 @@ Reference
    :maxdepth: 2
 
    connection
+   connectors/index
    messages
    exceptions
    utils

@@ -3,6 +3,11 @@ class RexProException(Exception):
     pass
 
 
+class RexProInvalidConnectorTypeException(RexProException):
+    """ Raised when the specified connector type isn't supported """
+    pass
+
+
 class RexProConnectionException(RexProException):
     """ Raised when there are problems with the rexster connection """
     pass

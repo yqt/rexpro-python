@@ -1,16 +1,14 @@
 from unittest import TestCase
 from nose.plugins.attrib import attr
-from nose.tools import nottest
 import os
 
-from rexpro.connectors.sync import RexProSyncConnectionPool, RexProSyncConnection
-from rexpro._compat import print_
+from rexpro.connectors.rgevent import RexProGeventConnectionPool, RexProGeventConnection
 
 import gevent
 
 
-@attr('unit', 'pooling')
-class TestConnectionPooling(TestCase):
+@attr('pooling', 'gevent')
+class TestGeventConnectionPooling(TestCase):
 
     host = os.getenv('TITAN_HOST', 'localhost')
     port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
@@ -25,11 +23,13 @@ class TestConnectionPooling(TestCase):
     sleep sleep_length
     return data
     }
+
+    test_slow_query(sleep_length, data)
     """
 
     def get_pool(self, host=None, port=None, graphname=None, graph_obj_name=None, username=None, password=None,
                  timeout=None):
-        return RexProSyncConnectionPool(
+        return RexProGeventConnectionPool(
             host=host or self.host,
             port=port or self.port,
             graph_name=graphname or self.default_graphname,
@@ -59,7 +59,7 @@ class TestConnectionPooling(TestCase):
     def test_pool_returns_connection(self):
         pool = self.get_pool()
         conn = pool.create_connection()
-        self.assertIsInstance(conn, RexProSyncConnection)
+        self.assertIsInstance(conn, RexProGeventConnection)
         pool.close_connection(conn)
 
     def test_pool_returns_unique_connections(self):

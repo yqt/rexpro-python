@@ -3,7 +3,7 @@ from nose.plugins.attrib import attr
 from functools import wraps
 import os
 
-from rexpro.connection import RexProConnection, RexProSocket
+from rexpro.connectors.sync import RexProSyncConnection, RexProSyncSocket, RexProSyncConnectionPool
 from rexpro.messages import ScriptRequest, MsgPackScriptResponse
 
 
@@ -34,6 +34,11 @@ class BaseRexProTestCase(TestCase):
     """
     Base test case for rexpro tests
     """
+
+    SOCKET_CLASS = RexProSyncSocket
+    CONN_CLASS = RexProSyncConnection
+    POOL_CLASS = RexProSyncConnectionPool
+
     host = os.getenv('TITAN_HOST', 'localhost')
     port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
     default_graphname = 'emptygraph'
@@ -46,7 +51,7 @@ class BaseRexProTestCase(TestCase):
         'graph',  # Tinkergraph
         #'emptysailgraph',  # in memory sail graph
         #'sailgraph',  #sail graph
-        #'orientdbsample',  # OrientDB
+        #'orientdbsample',  # OrientDBcd
         #'neo4jsample',  # Neo4j
         #'dexsample',  # DexGraph
         #'titangraph',  # Titan
@@ -67,7 +72,7 @@ class BaseRexProTestCase(TestCase):
             super(BaseRexProTestCase, self).run(result=result)
 
     def get_connection(self, host=None, port=None, graphname=None, username=None, password=None, timeout=None):
-        return RexProConnection(
+        return self.CONN_CLASS(
             host or self.host,
             port or self.port,
             graphname or self.default_graphname,
@@ -77,7 +82,7 @@ class BaseRexProTestCase(TestCase):
         )
 
     def get_socket(self, host=None, port=None):
-        conn = RexProSocket()
+        conn = self.SOCKET_CLASS()
         conn.connect((
             host or self.host,
             port or self.port,
