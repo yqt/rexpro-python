@@ -5,7 +5,7 @@ ChangeLog
 
 Changes to the library are recorded here.
 
-v0.1.9
+v0.2.0
 ------
   * Robust Reconnect and session handling
   * Allow Gevent, Eventlet and native python socket implementations

@@ -46,7 +46,6 @@ setup(
     maintainer_email='codylee@wellaware.us',
     url='https://github.com/platinummonkey/rexpro-python',
     license='BSD',
-    license='BSD',
     packages=find_packages(),
     include_package_data=True,
 )
