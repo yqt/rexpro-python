@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.2.1
+------
+  * Bugfix for closing transaction - thanks to Ashald for fixing this
+
 v0.2.0
 ------
   * Robust Reconnect and session handling
