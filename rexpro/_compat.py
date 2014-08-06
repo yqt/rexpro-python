@@ -25,3 +25,6 @@ reraise = six.reraise
 
 with_metaclass = six.with_metaclass
 print_ = six.print_
+
+Queue = six.moves.queue.Queue
+xrange = six.moves.range

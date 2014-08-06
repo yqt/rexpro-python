@@ -1,9 +1,11 @@
 from unittest import TestCase
+from rexpro._compat import PY2
 from nose.plugins.attrib import attr
 from rexpro.utils import get_rexpro
 from rexpro.exceptions import RexProInvalidConnectorTypeException
 from rexpro.connectors.sync import RexProSyncSocket, RexProSyncConnection, RexProSyncConnectionPool
-from rexpro.connectors.rgevent import RexProGeventSocket, RexProGeventConnection, RexProGeventConnectionPool
+if PY2:
+    from rexpro.connectors.rgevent import RexProGeventSocket, RexProGeventConnection, RexProGeventConnectionPool
 from rexpro.connectors.reventlet import RexProEventletSocket, RexProEventletConnection, RexProEventletConnectionPool
 
 
@@ -40,10 +42,11 @@ class TestRexProUtils(TestCase):
 
     def test_get_gevent(self):
         """ Test retrieve gevent classes """
-        sock, conn, pool = get_rexpro('gevent')
-        self.assertTrue(issubclass(sock, RexProGeventSocket))
-        self.assertTrue(issubclass(conn, RexProGeventConnection))
-        self.assertTrue(issubclass(pool, RexProGeventConnectionPool))
+        if PY2:
+            sock, conn, pool = get_rexpro('gevent')
+            self.assertTrue(issubclass(sock, RexProGeventSocket))
+            self.assertTrue(issubclass(conn, RexProGeventConnection))
+            self.assertTrue(issubclass(pool, RexProGeventConnectionPool))
 
     def test_get_eventlet(self):
         """ Test retrieve eventlet classes """

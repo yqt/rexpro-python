@@ -1,4 +1,5 @@
 from unittest import TestCase
+from rexpro._compat import xrange
 from nose.plugins.attrib import attr
 import os
 

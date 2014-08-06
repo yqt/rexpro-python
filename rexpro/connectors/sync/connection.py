@@ -1,5 +1,5 @@
 from socket import socket
-from Queue import Queue
+from rexpro._compat import Queue, text_type
 from select import select
 
 from rexpro.connectors.base import RexProBaseConnection, RexProBaseConnectionPool
@@ -72,7 +72,7 @@ class RexProSyncSocket(socket):
         if not msg_version:  # pragma: no cover
             # Can only be tested against a known broken version - none known yet.
             raise exceptions.RexProConnectionException('socket connection has been closed')
-        if bytearray([msg_version])[0] != 1:  # pragma: no cover
+        if bytearray(msg_version)[0] != 1:  # pragma: no cover
             # Can only be tested against a known broken version - none known yet.
             raise exceptions.RexProConnectionException('unsupported protocol version: {}'.format(msg_version))
 
@@ -93,9 +93,14 @@ class RexProSyncSocket(socket):
             # This shouldn't happen unless there is a server-side problem
             raise exceptions.RexProScriptException("Insufficient data received")
 
-        response = ''
-        while len(response) < msg_len:
-            response += self.recv(msg_len)
+        #response = ''
+        #while len(response) < msg_len:
+        #    response += self.recv(msg_len)
+        response = bytearray()
+        while msg_len > 0:
+            chunk = self.recv(msg_len)
+            response.extend(chunk)
+            msg_len -= len(chunk)
 
         MessageTypes = messages.MessageTypes
 
@@ -108,7 +113,7 @@ class RexProSyncSocket(socket):
         if msg_type not in type_map:  # pragma: no cover
             # this shouldn't happen unless there is an unknown rexpro version change
             raise exceptions.RexProConnectionException("can't deserialize message type {}".format(msg_type))
-        return type_map[msg_type].deserialize(response)
+        return type_map[int(msg_type)].deserialize(response)
 
 
 class RexProSyncConnection(RexProBaseConnection):

@@ -1,11 +1,13 @@
-box: wercker/python
+box: josh/python@0.0.2
 services:
   - platinummonkey/titan-stable
 build:
   steps:
     - script:
         name: Install development libraries
-        code: sudo apt-get update && apt-cache search libev && sudo apt-get install libev4 libev-dev libevent-2.0-5 libevent-dev libevent-extra-2.0-5
+        code: |-
+          sudo apt-get update
+          sudo apt-get install libev4 libev-dev libevent-2.0-5 libevent-dev libevent-extra-2.0-5
     - virtualenv:
         install_wheel: false
     - script:
@@ -19,7 +21,10 @@ build:
         code: pip uninstall -y rexpro
     - script:
         name: Test ping server
-        code: ping -c 3 $TITAN_HOST && ip addr && nc -q 10 -v -z $TITAN_HOST 8184
+        code: ping -c 3 $TITAN_HOST && nc -q 10 -v -z $TITAN_HOST 8184
     - script:
         name: Run Coverage tests
         code: ./run_coverage.sh
+    - script:
+        name: Run Compatibility tests
+        code: tox
