@@ -4,9 +4,9 @@ from nose.tools import nottest
 import os
 
 from rexpro.connectors.sync import RexProSyncConnectionPool, RexProSyncConnection
-from rexpro._compat import print_
+from rexpro._compat import print_, xrange
 
-import gevent
+import eventlet
 
 
 @attr('unit', 'pooling')
@@ -40,16 +40,16 @@ class TestConnectionPooling(TestCase):
         )
 
     def slow_start_simulation(self, pool):
-        gevent.sleep(1)
+        eventlet.sleep(1)
         conn = pool.create_connection()
         return conn
 
     def spawn_slow_network_and_query_slow_response(self, pool, script, sleep_time, data):
         conn = self.slow_start_simulation(pool)
         conn.open_transaction()
-        gevent.sleep(0)
+        eventlet.sleep(0)
         results = conn.execute(script=script, params={'sleep_length': sleep_time, 'data': data})
-        gevent.sleep(0)
+        eventlet.sleep(0)
         conn.close_transaction()
         return results
 
@@ -77,20 +77,19 @@ class TestConnectionPooling(TestCase):
 
     def test_many_concurrent_connections(self):
         pool = self.get_pool()
-        gevent.joinall([
-            gevent.spawn(pool.create_connection) for _ in xrange(self.NUM_ITER)
-        ])
+        epool = eventlet.GreenPool()
+        for _ in xrange(self.NUM_ITER):
+            epool.spawn_n(pool.create_connection)
+        epool.waitall()
 
     def test_unique_connections(self):
         pool = self.get_pool()
-        threads = []
+        epool = eventlet.GreenPool()
         for i in xrange(self.NUM_ITER):
-            threads.append(
-                gevent.spawn(self.spawn_slow_network_and_query_slow_response,
-                             pool, self.SLOW_NETWORK_QUERY, 1, {'value': i, i: 'value'})
-            )
+            epool.spawn_n(self.spawn_slow_network_and_query_slow_response,
+                          pool, self.SLOW_NETWORK_QUERY, 1, {'value': i, i: 'value'})
 
-        gevent.joinall(threads, timeout=5)
+        epool.waitall()
 
     def test_context_manager(self):
         pool = self.get_pool()

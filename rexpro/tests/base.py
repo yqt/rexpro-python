@@ -1,4 +1,5 @@
 from unittest import TestCase
+from rexpro._compat import text_type
 from nose.plugins.attrib import attr
 from functools import wraps
 import os
@@ -15,7 +16,7 @@ def multi_graph(func):
         except Exception as ex:
             #from http://stackoverflow.com/questions/6062576/adding-information-to-a-python-exception
             import sys
-            message = '[Graph: {}] '.format(getattr(self, 'graphname', None)) + unicode(ex)
+            message = '[Graph: {}] '.format(getattr(self, 'graphname', None)) + text_type(ex)
             #raise type(ex), type(ex)(message), sys.exc_info()[2]
             et, ei, tb = sys.exc_info()
             ei.message = message

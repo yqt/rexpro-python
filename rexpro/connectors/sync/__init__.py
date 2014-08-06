@@ -1,1 +1,1 @@
-from connection import RexProSyncSocket, RexProSyncConnectionPool, RexProSyncConnection
+from .connection import RexProSyncSocket, RexProSyncConnectionPool, RexProSyncConnection

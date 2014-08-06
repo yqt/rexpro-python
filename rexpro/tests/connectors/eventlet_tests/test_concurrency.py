@@ -1,4 +1,5 @@
 from unittest import TestCase
+from rexpro._compat import print_, xrange
 from nose.plugins.attrib import attr
 import os
 
@@ -92,5 +93,5 @@ class TestEventletConcurrency(TestCase):
                        )
 
         for result in pile:
-            print result
+            print_(result)
             self.assertIsInstance(result, dict)

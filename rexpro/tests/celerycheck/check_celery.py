@@ -1,6 +1,6 @@
 if __name__ == '__main__':
     import tasks
-    from rexpro._compat import print_
+    from rexpro._compat import print_, xrange
     print_("Queuing up tasks...")
     SLOW_NETWORK_QUERY = """def test_slow_query(sleep_time, value) {
     sleep sleep_time

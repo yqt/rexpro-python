@@ -1,1 +1,1 @@
-from connection import RexProEventletSocket, RexProEventletConnectionPool, RexProEventletConnection
+from .connection import RexProEventletSocket, RexProEventletConnectionPool, RexProEventletConnection

@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.2.2
+------
+  * Better Python 3.3 and 3.4 testing
+
 v0.2.1
 ------
   * Bugfix for closing transaction - thanks to Ashald for fixing this

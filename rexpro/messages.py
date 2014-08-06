@@ -6,7 +6,7 @@ from uuid import uuid1, uuid4
 import msgpack
 
 from rexpro import exceptions
-from rexpro._compat import string_types, integer_types, float_types, array_types
+from rexpro._compat import string_types, integer_types, float_types, array_types, text_type
 
 
 def int_to_32bit_array(val):
@@ -37,6 +37,23 @@ def int_from_32bit_array(val):
         rval <<= 8
         rval |= fragment
     return rval
+
+
+def bytearray_to_text(data):
+    if isinstance(data, array_types) and not isinstance(data, bytearray):
+        # Array of byte arrays
+        return [bytearray_to_text(obj) for obj in data]
+    elif isinstance(data, dict):
+        response = {}
+        for key, value in data.items():
+            response[bytearray_to_text(key)] = bytearray_to_text(value)
+        return response
+    elif isinstance(data, integer_types + float_types):
+        return data
+    elif isinstance(data, string_types):
+        return text_type(data)
+    elif isinstance(data, bytes):
+        return data.decode('UTF-8')
 
 
 class MessageTypes(object):
@@ -162,7 +179,7 @@ class ErrorResponse(RexProMessage):
     def deserialize(cls, data):
         message = msgpack.loads(data)
         session, request, meta, msg = message
-        return cls(message=msg, meta=meta)
+        return cls(message=msg, meta=bytearray_to_text(meta))
 
     def raise_exception(self):
         if self.meta == self.INVALID_MESSAGE_ERROR:
@@ -288,7 +305,7 @@ class SessionResponse(RexProMessage):
         session, request, meta, languages = message
         return cls(
             session_key=session,
-            meta=meta,
+            meta=bytearray_to_text(meta),
             languages=languages
         )
 
@@ -417,6 +434,6 @@ class MsgPackScriptResponse(RexProMessage):
         session, request, meta, results, bindings = message
 
         return cls(
-            results=results,
-            bindings=bindings
+            results=bytearray_to_text(results),
+            bindings=bytearray_to_text(bindings)
         )
