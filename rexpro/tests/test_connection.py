@@ -3,7 +3,7 @@ from nose.plugins.attrib import attr
 from mock import patch
 
 from rexpro.tests.base import BaseRexProTestCase, multi_graph
-from rexpro._compat import print_
+from rexpro._compat import print_, string_types
 
 from rexpro import exceptions
 
@@ -74,6 +74,7 @@ class TestQueries(BaseRexProTestCase):
 
         #test string
         data = e('yea boyeeee')
+        self.assertIsInstance(data, string_types)
         self.assertEqual(data, 'yea boyeeee')
 
         #test int

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from rexpro._compat import text_type
+from rexpro._compat import text_type, reraise
 from nose.plugins.attrib import attr
 from functools import wraps
 import os
@@ -20,7 +20,7 @@ def multi_graph(func):
             #raise type(ex), type(ex)(message), sys.exc_info()[2]
             et, ei, tb = sys.exc_info()
             ei.message = message
-            raise ei.with_traceback(tb)
+            reraise(et, ei, tb)
 
     # add the multi graph attribute to the function so
     # the test runner knows to run it multiple times

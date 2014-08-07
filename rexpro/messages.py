@@ -6,7 +6,7 @@ from uuid import uuid1, uuid4
 import msgpack
 
 from rexpro import exceptions
-from rexpro._compat import string_types, integer_types, float_types, array_types, text_type
+from rexpro._compat import string_types, integer_types, float_types, array_types, iteritems, print_
 
 
 def int_to_32bit_array(val):
@@ -41,19 +41,23 @@ def int_from_32bit_array(val):
 
 def bytearray_to_text(data):
     if isinstance(data, array_types) and not isinstance(data, bytearray):
-        # Array of byte arrays
         return [bytearray_to_text(obj) for obj in data]
     elif isinstance(data, dict):
         response = {}
-        for key, value in data.items():
+        for key, value in iteritems(data):
             response[bytearray_to_text(key)] = bytearray_to_text(value)
         return response
-    elif isinstance(data, integer_types + float_types):
+    elif isinstance(data, integer_types + float_types + string_types):
         return data
-    elif isinstance(data, string_types):
-        return text_type(data)
-    elif isinstance(data, bytes):
+    elif isinstance(data, (bytes, bytearray)):
         return data.decode('UTF-8')
+    elif isinstance(data, string_types):
+        return data
+    elif isinstance(data, (bytes, bytearray)):
+        return data.decode('UTF-8')
+    else:  # all else fails
+        print_("Defaulting no known way to handle {}: {}".format(type(data), data))
+        return data
 
 
 class MessageTypes(object):
@@ -179,7 +183,7 @@ class ErrorResponse(RexProMessage):
     def deserialize(cls, data):
         message = msgpack.loads(data)
         session, request, meta, msg = message
-        return cls(message=msg, meta=bytearray_to_text(meta))
+        return cls(message=bytearray_to_text(msg), meta=bytearray_to_text(meta))
 
     def raise_exception(self):
         if self.meta == self.INVALID_MESSAGE_ERROR:
