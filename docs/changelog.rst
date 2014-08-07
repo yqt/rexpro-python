@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.3.0
+------
+  * Python 3 support finalized, backported for python2 compatibility
+
 v0.2.2
 ------
   * Better Python 3.3 and 3.4 testing

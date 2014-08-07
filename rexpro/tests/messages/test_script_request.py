@@ -1,6 +1,7 @@
 from nose.plugins.attrib import attr
 from rexpro.messages import ScriptRequest, MsgPackScriptResponse, ErrorResponse, SessionRequest, SessionResponse
 from rexpro.tests.base import BaseRexProTestCase, multi_graph
+from rexpro._compat import string_types
 
 
 @attr('unit')
@@ -11,7 +12,7 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
         conn = self.get_socket()
         out_msg = ScriptRequest(
             """
-            v = g.addVertex([xyz:5])
+            v = g.addVertex([xyz:5,test:'test'])
             v
             """,
             in_session=False,
@@ -27,6 +28,9 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
         self.assertIn('_properties', response.results)
         self.assertIn('xyz', response.results['_properties'])
         self.assertEqual(response.results['_properties']['xyz'], 5)
+        self.assertIn('test', response.results['_properties'])
+        self.assertEqual(response.results['_properties']['test'], 'test')
+        self.assertIsInstance(response.results['_properties']['test'], string_types)
 
     @multi_graph
     def test_sessionless_message(self):
