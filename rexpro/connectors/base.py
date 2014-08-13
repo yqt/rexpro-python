@@ -375,13 +375,16 @@ class RexProBaseConnection(object):
 
         :rtype: list
         """
+        if self._in_transaction:
+            transaction = False
+
         self._conn.send_message(
             messages.ScriptRequest(
                 script=script,
                 params=params,
                 session_key=self._session_key,
                 isolate=isolate,
-                in_transaction=transaction
+                in_transaction=transaction,
             )
         )
         response = self._conn.get_response()
