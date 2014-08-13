@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.3.1
+------
+  * Transaction handling fix by nvie
+
 v0.3.0
 ------
   * Python 3 support finalized, backported for python2 compatibility
