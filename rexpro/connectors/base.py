@@ -357,8 +357,13 @@ class RexProBaseConnection(object):
         """
         self.test_connection()
         self.open_transaction()
-        yield
-        self.close_transaction()
+        try:
+            yield
+        except:
+            self.close_transaction(False)
+            raise
+        else:
+            self.close_transaction(True)
 
     def execute(self, script, params={}, isolate=True, transaction=True):
         """
