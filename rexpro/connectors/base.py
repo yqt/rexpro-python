@@ -248,7 +248,8 @@ class RexProBaseConnection(object):
             raise exceptions.RexProScriptException("transaction is already open")
         self.execute(
             script='g.stopTransaction(FAILURE)',
-            isolate=False
+            isolate=False,
+            transaction=False,
         )
         self._in_transaction = True
 
