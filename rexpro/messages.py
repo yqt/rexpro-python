@@ -40,6 +40,8 @@ def int_from_32bit_array(val):
 
 
 def bytearray_to_text(data):
+    if data is None:
+        return None
     if isinstance(data, array_types) and not isinstance(data, bytearray):
         return [bytearray_to_text(obj) for obj in data]
     elif isinstance(data, dict):
