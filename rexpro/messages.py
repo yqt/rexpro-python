@@ -2,7 +2,7 @@ import json
 import re
 import struct
 import warnings
-from uuid import uuid1, uuid4
+from uuid import uuid1
 
 import msgpack
 
