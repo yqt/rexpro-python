@@ -1,12 +1,13 @@
 import json
 import re
 import struct
+import warnings
 from uuid import uuid1, uuid4
 
 import msgpack
 
 from rexpro import exceptions
-from rexpro._compat import string_types, integer_types, float_types, array_types, iteritems, print_
+from rexpro._compat import string_types, integer_types, float_types, array_types, iteritems
 
 
 def int_to_32bit_array(val):
@@ -58,7 +59,7 @@ def bytearray_to_text(data):
     elif isinstance(data, (bytes, bytearray)):
         return data.decode('UTF-8')
     else:  # all else fails
-        print_("Defaulting no known way to handle {}: {}".format(type(data), data))
+        warnings.warn("Defaulting no known way to handle {}: {}".format(type(data), data), stacklevel=2)
         return data
 
 
