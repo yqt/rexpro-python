@@ -74,8 +74,18 @@ Explicit
 
    conn.test_connection()  # We test the connection here and attempt to re-connect if necessary
    conn.open_transaction()
-   conn.execute("//do some stuff")
-   conn.close_transaction()
+   try:
+      conn.execute("// do something")
+      conn.execute("// do another thing")
+   except:
+      conn.close_transaction(False)  # rollback
+      # Handle the exception here
+   else:
+      conn.close_transaction(True)   # commit
+
+If something fails mid-transaction, you're responsible yourself for
+handling the failure and properly rolling back the transaction on the
+server end (i.e. call `conn.close_transaction(False)`).
 
 
 Context Manager
@@ -84,8 +94,14 @@ Context Manager
 .. code-block:: python
 
    with conn.transaction():
-       conn.execute("//do some other stuff")
+       conn.execute("// do something")
+       conn.execute("// do another thing")
 
+If an exception occurs inside the transaction context (i.e. when one of
+the scripts fail to execute), the entire transaction will be rolled back
+on the server side and it will be as if none of the scripts ever took
+place.  The exception will be reraised, so you can catch it outside of the
+with-block and handle it properly.
 
 
 Query Scoping & Global Variables

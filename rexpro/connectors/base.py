@@ -248,7 +248,8 @@ class RexProBaseConnection(object):
             raise exceptions.RexProScriptException("transaction is already open")
         self.execute(
             script='g.stopTransaction(FAILURE)',
-            isolate=False
+            isolate=False,
+            transaction=False,
         )
         self._in_transaction = True
 
@@ -356,8 +357,13 @@ class RexProBaseConnection(object):
         """
         self.test_connection()
         self.open_transaction()
-        yield
-        self.close_transaction()
+        try:
+            yield
+        except:
+            self.close_transaction(False)
+            raise
+        else:
+            self.close_transaction(True)
 
     def execute(self, script, params={}, isolate=True, transaction=True):
         """
@@ -374,13 +380,16 @@ class RexProBaseConnection(object):
 
         :rtype: list
         """
+        if self._in_transaction:
+            transaction = False
+
         self._conn.send_message(
             messages.ScriptRequest(
                 script=script,
                 params=params,
                 session_key=self._session_key,
                 isolate=isolate,
-                in_transaction=transaction
+                in_transaction=transaction,
             )
         )
         response = self._conn.get_response()
