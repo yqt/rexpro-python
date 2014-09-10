@@ -1,11 +1,9 @@
+from contextlib import contextmanager
 from socket import SHUT_RDWR
+
+from rexpro import exceptions, messages
 from rexpro.exceptions import RexProConnectionException
 from rexpro.messages import ErrorResponse
-
-from contextlib import contextmanager
-
-from rexpro import exceptions
-from rexpro import messages
 
 
 class RexProBaseConnectionPool(object):
