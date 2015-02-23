@@ -16,7 +16,7 @@ class RexProBaseConnectionPool(object):
     CONN_CLASS = None
 
     def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None,
-                 pool_size=10):
+                 pool_size=10, with_session=False):
         """
         Connection constructor
 
@@ -47,6 +47,12 @@ class RexProBaseConnectionPool(object):
         self.pool_size = pool_size
         self.pool = self.QUEUE_CLASS()
         self.size = 0
+        self.session_key = None
+
+        if with_session:
+            with self.connection() as conn:
+                self.session_key = conn._session_key
+                conn.pool_session = self.session_key
 
     def get(self, *args, **kwargs):
         """ Retrieve a rexpro connection from the pool
@@ -85,17 +91,23 @@ class RexProBaseConnectionPool(object):
         """
         self.pool.put(conn)
 
-    def close_all(self):
+    def close_all(self, force_commit=False):
         """ Close all pool connections for a clean shutdown """
         while not self.pool.empty():
             conn = self.pool.get_nowait()
             try:
+                if force_commit:
+                    conn.execute(
+                        script='g.stopTransaction(SUCCESS)',
+                        isolate=False,
+                        transaction=False,
+                    )
                 conn.close()
             except Exception:
                 pass
 
     @contextmanager
-    def connection(self, *args, **kwargs):
+    def connection(self, transaction=True, *args, **kwargs):
         """ Context manager that conveniently grabs a connection from the pool and provides it with the context
         cleanly closes up the connection and restores it to the pool afterwards
 
@@ -117,13 +129,16 @@ class RexProBaseConnectionPool(object):
             raise RexProConnectionException("Cannot commit because connection was closed: %r" % (conn, ))
 
         try:
-            with conn.transaction():
+            if transaction:
+                with conn.transaction():
+                    yield conn
+            else:
                 yield conn
         finally:
             self.close_connection(conn, soft=True)
 
     def _create_connection(self, host=None, port=None, graph_name=None, graph_obj_name=None, username=None,
-                           password=None, timeout=None):
+                           password=None, timeout=None, session_key=None):
         """ Create a RexProSyncConnection using the provided parameters, defaults to Pool defaults
 
         :param host: the rexpro server to connect to
@@ -146,7 +161,9 @@ class RexProBaseConnectionPool(object):
                                graph_obj_name=graph_obj_name or self.graph_obj_name,
                                username=username or self.username,
                                password=password or self.password,
-                               timeout=timeout or self.timeout)
+                               timeout=timeout or self.timeout,
+                               session_key=session_key or self.session_key,
+                               pool_session=self.session_key)
 
     def create_connection(self, *args, **kwargs):
         """ Get a connection from the pool if available, otherwise return a new connection if the pool isn't full
@@ -190,7 +207,8 @@ class RexProBaseConnection(object):
 
     SOCKET_CLASS = None
 
-    def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None):
+    def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None,
+                 session_key=None, pool_session=None):
         """
         Connection constructor
 
@@ -214,11 +232,12 @@ class RexProBaseConnection(object):
         self.username = username
         self.password = password
         self.timeout = timeout
+        self._session_key = session_key
+        self.pool_session = pool_session
 
         self.graph_features = None
         self._conn = None
         self._in_transaction = False
-        self._session_key = None
         self._opened = False
 
         self.open()
@@ -276,20 +295,26 @@ class RexProBaseConnection(object):
         :param soft: Softly close the connection - do not actually close the socket (default: False)
         :type soft: bool
         """
-        self._conn.send_message(
-            messages.SessionRequest(
-                session_key=self._session_key,
-                graph_name=self.graph_name,
-                kill_session=True
+        # close the session, unless it is associated with a pool
+        if not self.pool_session:
+            self._conn.send_message(
+                messages.SessionRequest(
+                    session_key=self._session_key,
+                    graph_name=self.graph_name,
+                    kill_session=True
+                )
             )
-        )
-        response = self._conn.get_response()
+            response = self._conn.get_response()
+            self._session_key = None
+
+            if isinstance(response, ErrorResponse):
+                response.raise_exception()
+
         if not soft:
             self._opened = False
-        self._session_key = None
+
         self._in_transaction = False
-        if isinstance(response, ErrorResponse):
-            response.raise_exception()
+
 
     def open(self, soft=False):
         """ open the connection to the database
@@ -306,13 +331,13 @@ class RexProBaseConnection(object):
             except Exception as e:
                 raise RexProConnectionException("Could not connect to database: %s" % e)
 
-        # indicates that we're in a transaction
+        # indicate that we're not yet in a transaction
         self._in_transaction = False
 
-        # stores the session key
-        self._session_key = None
+        # get a new session key if there isn't one already
         self._opened = True
-        self._open_session()
+        if not self._session_key:
+            self._open_session()
 
     def test_connection(self):
         """ Test the socket, if it's errored or closed out, try to reconnect. Otherwise raise and Exception """
@@ -332,9 +357,12 @@ class RexProBaseConnection(object):
                         # indicates that we're in a transaction
                         self._in_transaction = False
 
-                        # stores the session key
-                        self._session_key = None
-                        self._open_session()
+                        # set the session key to the pool default
+                        if self.pool_session:
+                            self._session_key = self.pool_session
+                        else:
+                            self._session_key = None
+                            self._open_session()
                         return None
                 except Exception as e:
                     # Ignore this at let the outer handler handle iterations
@@ -365,7 +393,7 @@ class RexProBaseConnection(object):
         else:
             self.close_transaction(True)
 
-    def execute(self, script, params={}, isolate=True, transaction=True):
+    def execute(self, script, params=None, isolate=True, transaction=True):
         """
         executes the given gremlin script with the provided parameters
 
@@ -386,7 +414,7 @@ class RexProBaseConnection(object):
         self._conn.send_message(
             messages.ScriptRequest(
                 script=script,
-                params=params,
+                params=params or {},
                 session_key=self._session_key,
                 isolate=isolate,
                 in_transaction=transaction,
