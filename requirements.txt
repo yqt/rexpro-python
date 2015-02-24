@@ -29,4 +29,5 @@ sphinx-rtd-theme==0.1.6
 tox==1.7.1
 virtualenv==1.11.4
 watchdog==0.7.1
+wheel==0.24.0
 wsgiref==0.1.2
