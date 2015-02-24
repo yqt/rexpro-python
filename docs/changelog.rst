@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.0
+------
+  * Pooling support for Blueprints Wrapper and session management - thanks to aolieman
+
 v0.3.3
 ------
   * Fix Pooling issue: always return connections back to the pool by nvie
