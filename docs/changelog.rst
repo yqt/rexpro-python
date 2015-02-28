@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.1
+------
+  * python languange support via jython connectors like gremlin-python - thanks to Brian Corbin
+
 v0.4.0
 ------
   * Pooling support for Blueprints Wrapper and session management - thanks to aolieman
