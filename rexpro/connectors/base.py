@@ -393,7 +393,8 @@ class RexProBaseConnection(object):
         else:
             self.close_transaction(True)
 
-    def execute(self, script, params=None, isolate=True, transaction=True):
+    def execute(self, script, params=None, isolate=True, transaction=True,
+                language=messages.ScriptRequest.Language.GROOVY):
         """
         executes the given gremlin script with the provided parameters
 
@@ -405,6 +406,8 @@ class RexProBaseConnection(object):
         :type isolate: bool
         :param transaction: query will be wrapped in a transaction if set to True (default)
         :type transaction: bool
+        :param language: the script language that should be used (defaults to groovy)
+        :type language: str
 
         :rtype: list
         """
@@ -418,6 +421,7 @@ class RexProBaseConnection(object):
                 session_key=self._session_key,
                 isolate=isolate,
                 in_transaction=transaction,
+                language=language
             )
         )
         response = self._conn.get_response()

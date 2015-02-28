@@ -331,6 +331,7 @@ class ScriptRequest(RexProMessage):
         GROOVY = 'groovy'
         SCALA = 'scala'
         JAVA = 'java'
+        PYTHON = 'python'
 
     MESSAGE_TYPE = MessageTypes.SCRIPT_REQUEST
 
