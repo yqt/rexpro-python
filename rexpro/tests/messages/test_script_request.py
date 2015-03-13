@@ -171,4 +171,4 @@ class TestRexProScriptRequestMessage(BaseRexProTestCase):
 
         response = conn.execute(script, {'value': 1.2345678901234567890})
 
-        self.assertEqual(response['_properties']['testdouble'], 1.2345678901234567890)
+        self.assertAlmostEqual(response['_properties']['testdouble'], 1.2345678901234567890, 7)
