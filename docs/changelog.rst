@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.2
+------
+  * Connection Bugfix, connections that had thrown exceptions were sometimes unusable at this point, so fix logic to re-create the socket
+
 v0.4.1
 ------
   * python languange support via jython connectors like gremlin-python - thanks to Brian Corbin
