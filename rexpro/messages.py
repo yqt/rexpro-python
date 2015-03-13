@@ -354,8 +354,9 @@ class ScriptRequest(RexProMessage):
         :type isolate:bool
         :param in_transaction: indicates this message should be wrapped in a transaction
         :type in_transaction:bool
-        :param language: the language used by the script (only groovy has been tested)
-        :type language: ScriptRequest.Language
+        :param language: the language used by the script (only groovy has been tested) See ScriptRequest.Language for
+                         options
+        :type language: str
         """
         super(ScriptRequest, self).__init__(**kwargs)
         self.script = script

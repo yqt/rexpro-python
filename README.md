@@ -43,7 +43,7 @@ To get rexpro unit tests running you'll need a titan installation with rexster s
             </extensions>
         </graph>
         <graph>
-            <graph-name>emptygraph</graph-name>
+            <graph-name>graph</graph-name>
             <graph-type>tinkergraph</graph-type>
             <graph-mock-tx>true</graph-mock-tx>
             <extensions>

@@ -14,7 +14,7 @@ class TestConnectionPooling(TestCase):
 
     host = os.getenv('TITAN_HOST', 'localhost')
     port = int(os.getenv('TITAN_REXPRO_PORT', 8184))
-    default_graphname = 'emptygraph'
+    default_graphname = 'graph'
     default_graph_obj_name = 'g'
     username = 'rexster'
     password = 'rexster'

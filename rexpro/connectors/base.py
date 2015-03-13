@@ -315,14 +315,13 @@ class RexProBaseConnection(object):
 
         self._in_transaction = False
 
-
     def open(self, soft=False):
         """ open the connection to the database
 
         :param soft: Attempt to re-use the connection, if False (default), create a new socket
         :type soft: bool
         """
-        if not soft:
+        if not soft or not self._opened:
             # connect to server
             self._conn = self.SOCKET_CLASS()
             self._conn.settimeout(self.timeout)
