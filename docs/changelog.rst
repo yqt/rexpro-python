@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.3
+------
+  * Loosen six version requirement
+
 v0.4.2
 ------
   * Connection Bugfix, connections that had thrown exceptions were sometimes unusable at this point, so fix logic to re-create the socket

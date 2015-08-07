@@ -6,9 +6,6 @@ rexpro-python is a RexPro socket interface for python, specifically designed for
 For those already familiar with Blueprints (https://github.com/tinkerpop/blueprints/wiki) there is is a simple example.
 
 
-[![wercker status](https://app.wercker.com/status/6a2160385debe13745f2ff3eec734dac/m/master "wercker status")](https://app.wercker.com/project/bykey/6a2160385debe13745f2ff3eec734dac)
-
-
 Documentation
 =============
 
