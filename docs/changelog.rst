@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.4
+------
+  * Remove unused graph features which polls every connection. - thanks to atmos
+
 v0.4.3
 ------
   * Loosen six version requirement
