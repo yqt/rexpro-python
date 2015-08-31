@@ -144,40 +144,38 @@ class TestTransactions(BaseRexProTestCase):
         conn1 = self.get_connection()
         conn2 = self.get_connection()
 
-        if conn1.graph_features['supportsTransactions']:
-
-            with conn1.transaction():
-                v1, v2, v3 = conn1.execute(
-                    """
-                    def v1 = g.addVertex([val:1, str:"vertex 1"])
-                    def v2 = g.addVertex([val:2, str:"vertex 2"])
-                    def v3 = g.addVertex([val:3, str:"vertex 3"])
-                    [v1, v2, v3]
-                    """
-                )
-
-            print_("{}, {}, {}".format(v1, v2, v3))
-
-            conn1.open_transaction()
-            conn2.open_transaction()
-
-            v1_1 = conn1.execute(
+        with conn1.transaction():
+            v1, v2, v3 = conn1.execute(
                 """
-                def v1 = g.v(eid)
-                v1.setProperty("str", "v1")
-                v1
-                """,
-                params={'eid': v1['_id']}
+                def v1 = g.addVertex([val:1, str:"vertex 1"])
+                def v2 = g.addVertex([val:2, str:"vertex 2"])
+                def v3 = g.addVertex([val:3, str:"vertex 3"])
+                [v1, v2, v3]
+                """
             )
 
-            v1_2 = conn2.execute(
-                """
-                g.v(eid)
-                """,
-                params={'eid': v1['_id']}
-            )
+        print_("{}, {}, {}".format(v1, v2, v3))
 
-            self.assertEqual(v1_2['_properties']['str'], 'vertex 1')
+        conn1.open_transaction()
+        conn2.open_transaction()
+
+        v1_1 = conn1.execute(
+            """
+            def v1 = g.v(eid)
+            v1.setProperty("str", "v1")
+            v1
+            """,
+            params={'eid': v1['_id']}
+        )
+
+        v1_2 = conn2.execute(
+            """
+            g.v(eid)
+            """,
+            params={'eid': v1['_id']}
+        )
+
+        self.assertEqual(v1_2['_properties']['str'], 'vertex 1')
 
     def test_bad_multiple_transactions_one_connection(self):
         """ Tests that the transaction manager prevents more than one simultaneous transaction on a single connection
@@ -185,11 +183,10 @@ class TestTransactions(BaseRexProTestCase):
 
         conn = self.get_connection()
 
-        if conn.graph_features['supportsTransactions']:
-            with conn.transaction():
-                with self.assertRaises(exceptions.RexProException):
-                    with conn.transaction():
-                        pass
+        with conn.transaction():
+            with self.assertRaises(exceptions.RexProException):
+                with conn.transaction():
+                    pass
 
         conn.close()
 
