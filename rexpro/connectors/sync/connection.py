@@ -9,7 +9,6 @@ import struct
 from rexpro import exceptions
 from rexpro import messages
 
-import time
 class RexProSyncSocket(socket):
     """ Subclass of python's socket that sends and received rexpro messages
 
