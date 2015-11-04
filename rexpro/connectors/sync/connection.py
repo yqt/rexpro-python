@@ -96,13 +96,6 @@ class RexProSyncSocket(socket):
         #while len(response) < msg_len:
         #    response += self.recv(msg_len)
 
-        # Previous method: 2015.11.03
-        # response = bytearray()
-        # while msg_len > 0:
-        #     chunk = self.recv(msg_len)
-        #     response.extend(chunk)
-        #     msg_len -= len(chunk)
-
         # Update the looping to retrieve data without entering an infinite loop if
         # a connection goes down.
         response = bytearray()
