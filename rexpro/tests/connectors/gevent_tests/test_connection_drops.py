@@ -1,6 +1,6 @@
 __author__ = 'estefanortiz'
 from unittest import TestCase
-from rexpro._compat import PY2, xrange
+from rexpro._compat import PY2, print_
 from nose.plugins.attrib import attr
 from nose.tools import nottest
 import os
@@ -44,11 +44,11 @@ if PY2:
             )
 
         def test_bring_pool_down(self):
-            print "Gevent Lengthy Query"
+            print_("Gevent Lengthy Query")
             # Well use this and add time delays to kill the connection before the while loop and
             # within the while loop of the respective connection.py file to simulate the db going down
             # and coming back up.
             pool = self.get_pool()
             conn1 = pool.create_connection()
-            print "Calling Lengthy Query"
+            print_("Calling Lengthy Query")
             result1 = conn1.execute(script="""g.V('element_type','measurement')""")

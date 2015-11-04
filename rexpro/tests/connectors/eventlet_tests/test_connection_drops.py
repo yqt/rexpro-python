@@ -1,6 +1,7 @@
 __author__ = 'estefanortiz'
 from unittest import TestCase
 from nose.plugins.attrib import attr
+from rexpro._compat import print_
 import os
 from nose.tools import nottest
 from rexpro.connectors.reventlet import RexProEventletConnectionPool, RexProEventletConnection
@@ -39,11 +40,11 @@ class TestEventletConnectionPoolingDrops(TestCase):
         )
 
     def test_bring_pool_down(self):
-        print "Eventlet Lengthy Query"
+        print_("Eventlet Lengthy Query")
         # Well use this and add time delays to kill the connection before the while loop and
         # within the while loop of the respective connection.py file to simulate the db going down
         # and coming back up.
         pool = self.get_pool()
         conn1 = pool.create_connection()
-        print "Calling Lengthy Query"
+        print_("Calling Lengthy Query")
         result1 = conn1.execute(script="""g.V('element_type','measurement')""")
