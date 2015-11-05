@@ -5,8 +5,6 @@ from nose.plugins.attrib import attr
 from nose.tools import nottest
 import os
 
-
-print "Script start"
 if PY2:
     from rexpro.connectors.rgevent import RexProGeventConnectionPool, RexProGeventConnection
 
