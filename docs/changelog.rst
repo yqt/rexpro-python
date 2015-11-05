@@ -5,6 +5,10 @@ ChangeLog
 
 Changes to the library are recorded here.
 
+v0.4.5
+------
+  * Long outstanding connection bug fixed by Estefan Ortiz! This is caused when something awry happens with rexster's rexpro socket either caused by titan or caused by network outtage
+
 v0.4.4
 ------
   * Remove unused graph features which polls every connection. - thanks to atmos
