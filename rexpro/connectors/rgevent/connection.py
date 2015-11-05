@@ -9,7 +9,6 @@ import struct
 from rexpro import exceptions
 from rexpro import messages
 
-
 class RexProGeventSocket(gsocket):
     """ Subclass of gevent's socket that sends and received rexpro messages
 
@@ -96,11 +95,27 @@ class RexProGeventSocket(gsocket):
         #response = ''
         #while len(response) < msg_len:
         #    response += self.recv(msg_len)
+
+        # Update the looping to retrieve data without entering an infinite loop if
+        # a connection goes down.
         response = bytearray()
+        rec_len = 0
+        final_msg_len = msg_len
         while msg_len > 0:
             chunk = self.recv(msg_len)
+            # If an empty string is sent break out. We'll assume
+            # that the connection is dropped.
+            if not chunk:
+                break
             response.extend(chunk)
+            rec_len += len(chunk)
             msg_len -= len(chunk)
+
+        # Check the received length versus the expected message length if they differ something
+        # happened with the connection causing an early termination of the loop.
+        if rec_len != final_msg_len:  # pragma: no cover
+            # This shouldn't happen unless there is a server-side problem
+            raise exceptions.RexProScriptException("Insufficient data received")
 
         MessageTypes = messages.MessageTypes
 
