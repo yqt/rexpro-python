@@ -32,8 +32,8 @@ Features
 Links
 -----
 
-* Documentation: http://rexpro.readthedocs.org/
-* Official Repository: https://github.com/platinummonkey/rexpro.git
+* Documentation: http://rexpro-python.readthedocs.org/
+* Official Repository: https://github.com/platinummonkey/rexpro-python.git
 * Package: https://pypi.python.org/pypi/rexpro/
 
 rexpro is known to support Python 2.7. Python 3.x is not compatible due to the use of gevent.
