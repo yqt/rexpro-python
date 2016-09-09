@@ -16,7 +16,7 @@ class RexProBaseConnectionPool(object):
     CONN_CLASS = None
 
     def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None,
-                 pool_size=10, with_session=False):
+                 pool_size=10, with_session=False, session_less=False):
         """
         Connection constructor
 
@@ -34,6 +34,10 @@ class RexProBaseConnectionPool(object):
         :type password: str
         :param pool_size: the initial connection pool size
         :type pool_size: int
+        :param with_session: share session with connections
+        :type with_session: bool
+        :param session_less: sending msg without creating session
+        :type session_less: bool
         """
 
         self.host = host
@@ -43,13 +47,14 @@ class RexProBaseConnectionPool(object):
         self.username = username
         self.password = password
         self.timeout = timeout
+        self.session_less = session_less
 
         self.pool_size = pool_size
         self.pool = self.QUEUE_CLASS()
         self.size = 0
         self.session_key = None
 
-        if with_session:
+        if with_session and session_less is False:
             with self.connection() as conn:
                 self.session_key = conn._session_key
                 conn.pool_session = self.session_key
@@ -138,7 +143,7 @@ class RexProBaseConnectionPool(object):
             self.close_connection(conn, soft=True)
 
     def _create_connection(self, host=None, port=None, graph_name=None, graph_obj_name=None, username=None,
-                           password=None, timeout=None, session_key=None):
+                           password=None, timeout=None, session_key=None, session_less=None):
         """ Create a RexProSyncConnection using the provided parameters, defaults to Pool defaults
 
         :param host: the rexpro server to connect to
@@ -163,7 +168,8 @@ class RexProBaseConnectionPool(object):
                                password=password or self.password,
                                timeout=timeout or self.timeout,
                                session_key=session_key or self.session_key,
-                               pool_session=self.session_key)
+                               pool_session=self.session_key,
+                               session_less=self.session_less if session_less is None else session_less)
 
     def create_connection(self, *args, **kwargs):
         """ Get a connection from the pool if available, otherwise return a new connection if the pool isn't full
@@ -208,7 +214,7 @@ class RexProBaseConnection(object):
     SOCKET_CLASS = None
 
     def __init__(self, host, port, graph_name, graph_obj_name='g', username='', password='', timeout=None,
-                 session_key=None, pool_session=None):
+                 session_key=None, pool_session=None, session_less=None):
         """
         Connection constructor
 
@@ -234,6 +240,7 @@ class RexProBaseConnection(object):
         self.timeout = timeout
         self._session_key = session_key
         self.pool_session = pool_session
+        self.session_less = session_less
 
         self._conn = None
         self._in_transaction = False
@@ -293,7 +300,7 @@ class RexProBaseConnection(object):
         :type soft: bool
         """
         # close the session, unless it is associated with a pool
-        if not self.pool_session:
+        if not self.pool_session and self.session_less is False:
             self._conn.send_message(
                 messages.SessionRequest(
                     session_key=self._session_key,
@@ -332,7 +339,7 @@ class RexProBaseConnection(object):
 
         # get a new session key if there isn't one already
         self._opened = True
-        if not self._session_key:
+        if not self._session_key and self.session_less is False:
             self._open_session()
 
     def test_connection(self):
@@ -356,7 +363,7 @@ class RexProBaseConnection(object):
                         # set the session key to the pool default
                         if self.pool_session:
                             self._session_key = self.pool_session
-                        else:
+                        elif self.session_less is False:
                             self._session_key = None
                             self._open_session()
                         return None
@@ -414,10 +421,13 @@ class RexProBaseConnection(object):
             messages.ScriptRequest(
                 script=script,
                 params=params or {},
-                session_key=self._session_key,
+                in_session=False if self.session_less else True,
+                session_key=None if self.session_less else self._session_key,
                 isolate=isolate,
                 in_transaction=transaction,
-                language=language
+                language=language,
+                graph_name=self.graph_name if self.session_less else None,
+                graph_obj_name=self.graph_obj_name if self.session_less else None
             )
         )
         response = self._conn.get_response()
